@@ -336,7 +336,7 @@ details.help summary{cursor:pointer;color:var(--cyan)}
 /* ================= data ================= */
 const CATS = {
   anime:["Anime"], gaming:["Gaming"], theme:["Theme park"], night:["Nightlife"], food:["Food & markets"], gamble:["Gambling"],
-  museum:["Museum"], temple:["Temple & shrine"], event:["Event"], transit:["Transit"], stay:["Stay"]
+  museum:["Museum"], temple:["Temple & shrine"], wild:["Wildlife"], event:["Event"], transit:["Transit"], stay:["Stay"]
 };
 const CITY = {Tokyo:["東京","#FF3D8B"],Osaka:["大阪","#FFB547"],Kyoto:["京都","#4DF0A8"],Hakuba:["白馬","#37E2FF"]};
 const LS = {hours:"njr-hours", plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1", gh:"njr-gh", sync:"njr-sync", api:"njr-gh-api", split:"njr-split", cardMin:"njr-cardmin"};
@@ -1010,7 +1010,7 @@ $("#searchClose").onclick=()=>{ $("#searchBox").hidden=true; $("#results").inner
 $("#searchIn").addEventListener("input",()=>{ clearTimeout(searchT); searchT=setTimeout(doSearch,450); });
 $("#searchIn").addEventListener("keydown",e=>{ if(e.key==="Enter"){ clearTimeout(searchT); doSearch(); } if(e.key==="Escape") $("#searchClose").click(); });
 function guessCat(types=[]){ const t=types.join(" ");
-  if(/casino/.test(t)) return "gamble"; if(/amusement_park|theme_park|water_park/.test(t)) return "theme"; if(/museum|art_gallery/.test(t)) return "museum";
+  if(/casino/.test(t)) return "gamble"; if(/zoo|aquarium|wildlife|national_park/.test(t)) return "wild"; if(/amusement_park|theme_park|water_park/.test(t)) return "theme"; if(/museum|art_gallery/.test(t)) return "museum";
   if(/bar|night_club|pub/.test(t)) return "night"; if(/restaurant|food|cafe|market|bakery/.test(t)) return "food";
   if(/place_of_worship|shinto|temple|shrine|church/.test(t)) return "temple"; if(/movie_theater|stadium|event/.test(t)) return "event";
   if(/lodging|hotel/.test(t)) return "stay"; if(/station|transit|airport/.test(t)) return "transit"; if(/video_arcade|electronics|game/.test(t)) return "gaming"; return "event"; }
@@ -1155,7 +1155,7 @@ function ideaAction(id){
   if(id==="iToIdeas") move(plan.ideas,"Moved to Ideas");
 }
 $("#mKml").onclick=()=>{
-  const x=s=>esc(s); const icon={anime:"pink-circle",gaming:"ltblu-circle",theme:"grn-circle",night:"purple-circle",food:"orange-circle",gamble:"ylw-stars",museum:"blu-circle",temple:"red-circle",event:"ylw-circle",transit:"wht-circle",stay:"wht-blank"};
+  const x=s=>esc(s); const icon={anime:"pink-circle",gaming:"ltblu-circle",theme:"grn-circle",night:"purple-circle",food:"orange-circle",gamble:"ylw-stars",museum:"blu-circle",temple:"red-circle",wild:"grn-diamond",event:"ylw-circle",transit:"wht-circle",stay:"wht-blank"};
   const out=['<?xml version="1.0" encoding="UTF-8"?>','<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+x(plan.trip||"Japan trip")+'</name>'];
   Object.entries(icon).forEach(([k,v])=>out.push(`<Style id="${k}"><IconStyle><Icon><href>http://maps.google.com/mapfiles/kml/paddle/${v}.png</href></Icon></IconStyle></Style>`));
   let cur=null; const groups=[]; plan.days.forEach((d,i)=>{ if(!cur||cur.city!==d.city||cur.days.length>=4){ cur={city:d.city,days:[]}; groups.push(cur);} cur.days.push(d); });
