@@ -31,16 +31,13 @@ a{color:var(--cyan)}
 
 .app{display:grid;grid-template-columns:400px minmax(0,1fr);height:100%;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .panel{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--panel);border-right:1px solid var(--line);position:relative;z-index:2}
-.mapwrap{position:relative;min-width:0;min-height:0}
+.mapwrap{position:relative;min-width:0;min-height:0;overflow:hidden}
 #map{position:absolute;inset:0;background:#0C0E1C}
-@media (max-width:820px){
-  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:52% 48%}
-  .mapwrap{grid-row:1}
-  .panel{grid-row:2;border-right:0;border-top:1px solid var(--line)}
-}
+.grip{display:none}
+.sm-only{display:none}
 
 /* panel */
-.phead{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.phead{position:relative;padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .phead h1{margin:0;font:700 22px/1 var(--display);letter-spacing:.03em}
 .phead h1 .p{color:var(--pink);text-shadow:0 0 14px rgba(255,61,139,.5)}
 .phead h1 .c{color:var(--cyan);text-shadow:0 0 14px rgba(55,226,255,.4)}
@@ -54,7 +51,7 @@ a{color:var(--cyan)}
 @keyframes blink{50%{opacity:.25}}
 .iconbtn{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
 .iconbtn:hover{border-color:var(--cyan)}
-.menu{position:absolute;right:12px;top:54px;z-index:10;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:6px;display:flex;flex-direction:column;min-width:220px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.menu{position:absolute;right:12px;top:calc(100% - 6px);z-index:10;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:6px;display:flex;flex-direction:column;min-width:220px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
 .menu button,.menu label{background:none;border:0;text-align:left;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px}
 .menu button:hover,.menu label:hover{background:var(--line)}
 
@@ -74,7 +71,8 @@ a{color:var(--cyan)}
 .dayhead .note{margin:4px 0 0;color:#AEB3CF;font-size:13px}
 .dayhead .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 
-.list{flex:1 1 auto;overflow-y:auto;padding:4px 12px 12px;min-height:0}
+.pbody{flex:1 1 auto;overflow-y:auto;min-height:0;overscroll-behavior:contain}
+.list{padding:4px 12px 12px}
 .row{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:8px 8px;border-radius:10px;border:1px solid transparent;cursor:pointer}
 .row:hover{background:var(--panel2)}
 .row.sel{background:#1B2044;border-color:var(--line2)}
@@ -149,6 +147,12 @@ details.ideas summary{cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:
 .dot:hover{opacity:1;transform:translateY(6px) scale(1.3)}
 .idpin{width:16px;height:16px;border-radius:50%;border:2px dashed #AEB4D6;background:rgba(10,11,18,.7);transform:translateY(8px);cursor:pointer}
 @keyframes pulse{from{opacity:.9;transform:scale(.7)}to{opacity:0;transform:scale(1.5)}}
+.me{position:relative;width:18px;height:18px;border-radius:50%;background:var(--cyan);border:3px solid #fff;box-shadow:0 0 14px var(--cyan);transform:translateY(9px);pointer-events:none}
+.me::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--cyan);animation:pulse 2s ease-out infinite}
+#locBtn{width:32px;padding:0}
+#locBtn svg{width:16px;height:16px}
+#locBtn.on{border-color:var(--cyan);color:var(--cyan)}
+#locBtn.busy svg{animation:blink 1s ease-in-out infinite}
 
 /* setup */
 .setup{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at 20% 10%,rgba(55,226,255,.12),transparent 55%),radial-gradient(ellipse at 90% 90%,rgba(255,61,139,.14),transparent 55%),var(--ink);overflow:auto;padding:24px 16px}
@@ -173,6 +177,39 @@ details.help summary{cursor:pointer;color:var(--cyan)}
 .scanv{width:100%;border-radius:10px;background:#000;aspect-ratio:1;object-fit:cover;margin-top:8px}
 .nomap{position:absolute;inset:0;z-index:2;display:grid;place-items:center;text-align:center;padding:90px 24px 24px;color:var(--muted)}
 .nomap p{max-width:320px;margin:0 auto 12px}
+/* phones: map on top, list below, split adjustable with the grip */
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:var(--maph,42%) minmax(0,1fr);transition:grid-template-rows .22s ease}
+  .app.dragging{transition:none}
+  .mapwrap{grid-row:1}
+  .panel{grid-row:2;border-right:0;border-top:1px solid var(--line2);border-radius:14px 14px 0 0;box-shadow:0 -8px 24px rgba(0,0,0,.45)}
+  .grip{display:grid;place-items:center;width:100%;height:20px;flex:0 0 auto;background:none;border:0;padding:0;cursor:grab;touch-action:none}
+  .grip span{width:44px;height:5px;border-radius:3px;background:var(--line2)}
+  .grip:active span,.app.dragging .grip span{background:var(--cyan)}
+  .phead{padding:0 14px 8px;touch-action:none}
+  .phead h1{font-size:17px}
+  .phead .sub{display:inline-block;margin:4px 10px 0 0;font-size:10px}
+  .sync{margin-top:4px;vertical-align:top}
+  .iconbtn{width:32px;height:32px}
+  .menu{position:fixed;top:calc(env(safe-area-inset-top) + 8px);right:8px;max-height:calc(100% - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:auto;z-index:40}
+  .chips{padding:8px 12px}
+  .chip{min-width:54px;padding:5px 8px 6px}
+  .chip .dn{font-size:15px}
+  .dayhead{padding:10px 14px 4px}
+  .dayhead .note{font-size:12px}
+  .list{padding:2px 8px 16px}
+  .row{padding:8px 6px;gap:8px}
+  .pfoot{padding:8px 10px}
+  .topbar{top:8px;left:8px;right:8px;gap:6px;flex-wrap:nowrap}
+  .scrub{flex:1 1 auto;padding:6px 8px;gap:8px}
+  #scrubB,.lg-only{display:none}
+  .sm-only{display:inline}
+  .tools{padding:4px;gap:4px}
+  .tools .btn{padding:6px 8px}
+  .hintbar{top:52px}
+  .card{left:8px;right:8px;bottom:8px;width:auto;padding:10px 12px;max-height:calc(100% - 64px)}
+  .card h2{font-size:17px}
+}
 /* iOS zooms into inputs smaller than 16px */
 @media (pointer:coarse){input,select,textarea{font-size:16px!important}}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:9px 14px;font-size:13px;max-width:calc(100% - 32px)}
@@ -209,10 +246,10 @@ details.help summary{cursor:pointer;color:var(--cyan)}
 
 <div class="app" id="app">
   <aside class="panel" aria-label="Itinerary">
+    <button class="grip" id="grip" aria-label="Drag to resize the map and the list, tap to switch to the full list"><span></span></button>
     <div class="phead">
       <div><h1><span class="p">NEON</span> JAPAN <span class="c">ROUTE</span></h1><div class="sub" id="sub"></div><button class="sync" id="sync" hidden><i></i><span></span></button></div>
       <button class="iconbtn" id="menuBtn" aria-label="Menu" aria-haspopup="true">⋯</button>
-    </div>
     <div class="menu" id="menu" hidden>
       <button id="mSync">Sync now</button>
       <button id="mHistory">Version history (undo) ↗</button>
@@ -224,9 +261,12 @@ details.help summary{cursor:pointer;color:var(--cyan)}
       <button id="mKey">Google Maps key</button>
       <button id="mDisc">Disconnect this device</button>
     </div>
+    </div>
     <nav class="chips" id="chips" aria-label="Days"></nav>
-    <div class="dayhead" id="dayhead"></div>
-    <div class="list" id="list"></div>
+    <div class="pbody" id="pbody">
+      <div class="dayhead" id="dayhead"></div>
+      <div class="list" id="list"></div>
+    </div>
     <div class="search" id="searchBox" hidden>
       <div style="display:flex;gap:6px"><input id="searchIn" placeholder="Search Google Maps, e.g. ramen near Shibuya" autocomplete="off"><button class="btn sm" id="searchClose">Close</button></div>
       <div class="results" id="results"></div>
@@ -252,8 +292,9 @@ details.help summary{cursor:pointer;color:var(--cyan)}
         <span class="lbl" id="scrubB"></span>
       </div>
       <div class="glass tools">
-        <button class="btn sm" id="fitDay">Fit day</button>
-        <button class="btn sm" id="fitTrip">Whole trip</button>
+        <button class="btn sm" id="fitDay"><span class="lg-only">Fit day</span><span class="sm-only">Day</span></button>
+        <button class="btn sm" id="fitTrip"><span class="lg-only">Whole trip</span><span class="sm-only">Trip</span></button>
+        <button class="btn sm" id="locBtn" aria-label="Show my location" title="Show my location"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg></button>
       </div>
     </div>
     <div class="glass hintbar" id="dropHint" hidden>Click the map to drop a pin · Esc to cancel</div>
@@ -270,7 +311,7 @@ const CATS = {
   museum:["Museum"], temple:["Temple & shrine"], event:["Event"], transit:["Transit"], stay:["Stay"]
 };
 const CITY = {Tokyo:["東京","#FF3D8B"],Osaka:["大阪","#FFB547"],Kyoto:["京都","#4DF0A8"],Hakuba:["白馬","#37E2FF"]};
-const LS = {plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1", gh:"njr-gh", sync:"njr-sync", api:"njr-gh-api"};
+const LS = {plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1", gh:"njr-gh", sync:"njr-sync", api:"njr-gh-api", split:"njr-split"};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = { get(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }, del(k){ try{ localStorage.removeItem(k); }catch(_){} } };
@@ -313,6 +354,8 @@ function gmPlaceUrl(s,d){ if(s.placeId) return "https://www.google.com/maps/sear
   if(s.cat==="stay"||s.cat==="transit") return "https://www.google.com/maps/search/?api=1&query="+ll(s);
   return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent((s.q||s.name.split("·")[0].trim())+" "+(d?.city||"")); }
 const gmDirUrl = (a,b,mode) => "https://www.google.com/maps/dir/?api=1&origin="+ll(a)+"&destination="+ll(b)+"&travelmode="+(mode||"transit");
+// no origin: Google Maps starts from wherever the phone is
+const gmHereUrl = s => "https://www.google.com/maps/dir/?api=1&destination="+(s.placeId?encodeURIComponent(s.name)+"&destination_place_id="+s.placeId:ll(s))+"&travelmode=transit";
 
 /* ================= routes (Google Routes API) ================= */
 async function routesApi(a,b,mode){
@@ -749,9 +792,10 @@ function renderCard(){
   }
   const tag=s.booked===false?`<span class="tag book">book ahead</span>`:s.booked?`<span class="tag ok">booked</span>`:"";
   C.innerHTML=`<div class="when"><span style="color:${e.color}">●</span>${dlabel(d.date)} · ${esc(s.time)} · stop ${e.k+1} of ${d.stops.length}${tag}</div>
-    <h2>${esc(s.name)}</h2><div class="cat" style="color:${e.color}">${(CATS[s.cat]||["Other"])[0]}</div>
+    <h2>${esc(s.name)}</h2><div class="cat" style="color:${e.color}">${(CATS[s.cat]||["Other"])[0]}${me?` · <span style="color:var(--muted)">${fmtKm(hav(me,s))} from you</span>`:""}</div>
     ${s.note?`<p>${esc(s.note)}</p>`:""}
     <div class="acts"><a class="btn sm primary" href="${gmPlaceUrl(s,d)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+      <a class="btn sm" href="${gmHereUrl(s)}" target="_blank" rel="noopener">Directions from here ↗</a>
       ${prev&&prev.di===e.di?`<a class="btn sm" href="${gmDirUrl(prev.s,s)}" target="_blank" rel="noopener">Directions from #${e.k} ↗</a>`:""}
       <button class="btn sm" id="cEdit">Edit</button></div>
     <div class="nav"><button class="btn sm" id="cPrev" ${prev?"":"disabled"}>‹ ${prev?esc(prev.s.name.slice(0,18)):"Start"}</button><span>#${e.i+1} / ${seq.length}</span><button class="btn sm" id="cNext" ${next?"":"disabled"}>${next?esc(next.s.name.slice(0,18)):"End"} ›</button></div>`;
@@ -831,6 +875,7 @@ $("#list").addEventListener("click",e=>{
   const ai=e.target.closest("[data-addidea]"); if(ai){ const x=plan.ideas[+ai.dataset.addidea]; plan.ideas.splice(+ai.dataset.addidea,1); addStopAt({lat:x.lat,lng:x.lng},x.name,{cat:x.cat,note:x.note}); return; }
   const r=e.target.closest(".row"); if(!r) return;
   if(r.dataset.day!=null&&r.dataset.id==null){ dayIdx=+r.dataset.day; selId=null; renderAll(); fitDay(); return; }
+  if(phone()&&split<.05) setSplit(.42,true);   // full-list mode: bring the map back to show the stop
   select(r.dataset.id,{pan:true,zoom:14});
 });
 $("#list").addEventListener("mouseover",e=>{ const r=e.target.closest(".row[data-id]"); if(r) hover(r.dataset.id,true); });
@@ -883,6 +928,61 @@ $("#mKml").onclick=()=>{
     out.push("</Folder>"); });
   out.push("</Document></kml>"); download("japan-trip.kml",out.join("\n"),"application/vnd.google-earth.kml+xml");
 };
+
+/* ================= phone layout: map / list split ================= */
+const phone = () => matchMedia("(max-width:820px)").matches;
+let split = (()=>{ const v=parseFloat(store.get(LS.split)); return isNaN(v)?.42:v; })();   // map's share of the height on phones
+function setSplit(f,keep){ split=Math.max(0,Math.min(.8,f)); $("#app").style.setProperty("--maph",(split*100).toFixed(1)+"%"); if(keep) store.set(LS.split,String(split)); }
+setSplit(split);
+(()=>{
+  let drag=null;
+  const down=e=>{ if(!phone()||e.target.closest(".phead button,.menu")) return;   // header buttons keep working
+    const top=$("#mapwrap").getBoundingClientRect().top, bottom=$(".panel").getBoundingClientRect().bottom;
+    drag={top,h:bottom-top,y:e.clientY,start:split,moved:false,grip:e.currentTarget.id==="grip"};
+    e.currentTarget.setPointerCapture(e.pointerId); $("#app").classList.add("dragging"); };
+  const move=e=>{ if(!drag) return; if(Math.abs(e.clientY-drag.y)>6) drag.moved=true; if(drag.moved) setSplit((e.clientY-drag.top)/drag.h); };
+  const up=()=>{ if(!drag) return; const d=drag; drag=null; $("#app").classList.remove("dragging");
+    if(!d.moved&&!d.grip) return;
+    const f = !d.moved ? (d.start<.1?.42:0) : [0,.42,.7].reduce((a,b)=>Math.abs(b-split)<Math.abs(a-split)?b:a);   // tap toggles full list; drag snaps
+    setSplit(f,true);
+    if(d.start<.1&&f>0&&map) setTimeout(()=>{ const e=selId&&entry(selId); if(e) map.panTo({lat:e.s.lat,lng:e.s.lng}); else fitDay(); },260); };
+  ["#grip",".phead"].forEach(sel=>{ const el=$(sel);
+    el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move); el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up); });
+})();
+
+/* ================= my location ================= */
+let me=null, meMarker=null, meCircle=null, meWatch=null, meWanted=false, meCenter=false;
+function centerMe(){ map.panTo(me); if(map.getZoom()<15) map.setZoom(15); }
+function watchMe(){
+  if(meWatch!==null) return;
+  $("#locBtn").classList.add("busy");
+  meWatch=navigator.geolocation.watchPosition(p=>{
+    const first=!me; me={lat:p.coords.latitude,lng:p.coords.longitude};
+    $("#locBtn").classList.remove("busy"); $("#locBtn").classList.add("on");
+    if(map){
+      if(!meMarker){ const el=document.createElement("div"); el.className="me";
+        meMarker=new AME({map,position:me,content:el,zIndex:2000,title:"You are here"});
+        meCircle=new google.maps.Circle({map,center:me,radius:p.coords.accuracy,clickable:false,strokeColor:"#37E2FF",strokeOpacity:.35,strokeWeight:1,fillColor:"#37E2FF",fillOpacity:.08}); }
+      else { meMarker.position=me; meCircle.setCenter(me); meCircle.setRadius(p.coords.accuracy); }
+      if(meCenter){ meCenter=false; centerMe(); }
+    }
+    if(first&&selId&&!editing) renderCard();   // adds the distance to the open stop
+  },err=>{
+    $("#locBtn").classList.remove("busy");
+    if(err.code===1){ stopMe(); meWanted=false; $("#locBtn").classList.remove("on");
+      toast("Location is off for this site. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App."); }
+    else if(meCenter){ meCenter=false; toast("Couldn't find your location yet. Try again in a moment."); }
+  },{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+}
+function stopMe(){ if(meWatch!==null) navigator.geolocation.clearWatch(meWatch); meWatch=null; }
+$("#locBtn").onclick=()=>{
+  if(!navigator.geolocation) return toast("This browser can't share your location.");
+  if(!map) return toast("The map isn't loaded yet.");
+  meWanted=true;
+  if(me) centerMe(); else meCenter=true;
+  watchMe();
+};
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) stopMe(); else if(meWanted) watchMe(); });   // no GPS while in the background
 
 /* ================= boot ================= */
 // Show this device's saved copy straight away, then catch up with GitHub.
