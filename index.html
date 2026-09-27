@@ -125,6 +125,18 @@ details.ideas summary{cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:
 .hintbar{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:3;padding:7px 12px;font-size:12px}
 
 .card{position:absolute;left:12px;bottom:12px;width:min(390px,calc(100% - 24px));z-index:3;padding:12px 14px;max-height:calc(100% - 90px);overflow:auto}
+.card .cctl{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+.cbtn{width:30px;height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--text);cursor:pointer;display:grid;place-items:center;font-size:13px;line-height:1;padding:0}
+.cbtn:hover{border-color:var(--cyan)}
+.card .cctl ~ .when{padding-right:70px;min-height:24px}
+.card .when,.mini{touch-action:none}   /* swipe the card down to minimise, the bar up to expand */
+.card.min{padding:6px;overflow:hidden}
+.mini{display:flex;align-items:center;gap:6px}
+.mini .btn{padding:6px 10px}
+.mini-main{flex:1;min-width:0;display:flex;align-items:center;gap:7px;background:none;border:0;padding:6px 4px;cursor:pointer;text-align:left;font:600 13px/1.2 var(--display)}
+.mini-main b{font:600 12px/1 var(--mono);font-variant-numeric:tabular-nums}
+.mini-main .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini-main .exp{color:var(--muted)}
 .card .when{font:600 11px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .card h2{margin:6px 0 2px;font:700 20px/1.2 var(--display)}
 .card .cat{font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase}
@@ -311,7 +323,7 @@ const CATS = {
   museum:["Museum"], temple:["Temple & shrine"], event:["Event"], transit:["Transit"], stay:["Stay"]
 };
 const CITY = {Tokyo:["東京","#FF3D8B"],Osaka:["大阪","#FFB547"],Kyoto:["京都","#4DF0A8"],Hakuba:["白馬","#37E2FF"]};
-const LS = {plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1", gh:"njr-gh", sync:"njr-sync", api:"njr-gh-api", split:"njr-split"};
+const LS = {plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1", gh:"njr-gh", sync:"njr-sync", api:"njr-gh-api", split:"njr-split", cardMin:"njr-cardmin"};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = { get(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }, del(k){ try{ localStorage.removeItem(k); }catch(_){} } };
@@ -772,10 +784,20 @@ function ideasHtml(){
 /* ================= card ================= */
 const catOpts = v => Object.entries(CATS).map(([k,[n]])=>`<option value="${k}"${k===v?" selected":""}>${n}</option>`).join("");
 const dayOpts = v => plan.days.map((d,i)=>`<option value="${i}"${i===v?" selected":""}>${dlabel(d.date)} · ${esc(d.city)}</option>`).join("");
+let cardMin = store.get(LS.cardMin)==="1";   // minimised to a one-line bar; stays that way while stepping through stops
+function setCardMin(on){ cardMin=on; store.set(LS.cardMin,on?"1":"0"); renderCard(); }
+const cardCtl = min => `<div class="cctl">${min?`<button class="cbtn" id="cMin" aria-label="Minimise" title="Minimise">▾</button>`:""}<button class="cbtn" id="cClose" aria-label="Close" title="Close">✕</button></div>`;
 function renderCard(){
   const C=$("#card"); const e=selId&&entry(selId); if(!e){ C.hidden=true; return; }
   const {s,d}=e; C.hidden=false;
   const prev=seq[e.i-1], next=seq[e.i+1];
+  C.classList.toggle("min",cardMin&&!editing);
+  if(cardMin&&!editing){
+    C.innerHTML=`<div class="mini"><button class="btn sm" id="cPrev" ${prev?"":"disabled"} aria-label="Previous stop">‹</button>
+      <button class="mini-main" id="cExpand" aria-label="Show details"><span style="color:${e.color}">●</span><b>${esc(s.time)}</b><span class="nm">${esc(s.name)}</span><span class="exp">▴</span></button>
+      <button class="btn sm" id="cNext" ${next?"":"disabled"} aria-label="Next stop">›</button><button class="cbtn" id="cClose" aria-label="Close" title="Close">✕</button></div>`;
+    return;
+  }
   if(editing){
     C.innerHTML=`<div class="when"><span style="color:${e.color}">●</span> Editing stop</div>
     <div class="form">
@@ -791,7 +813,7 @@ function renderCard(){
     return;
   }
   const tag=s.booked===false?`<span class="tag book">book ahead</span>`:s.booked?`<span class="tag ok">booked</span>`:"";
-  C.innerHTML=`<div class="when"><span style="color:${e.color}">●</span>${dlabel(d.date)} · ${esc(s.time)} · stop ${e.k+1} of ${d.stops.length}${tag}</div>
+  C.innerHTML=`${cardCtl(true)}<div class="when"><span style="color:${e.color}">●</span>${dlabel(d.date)} · ${esc(s.time)} · stop ${e.k+1} of ${d.stops.length}${tag}</div>
     <h2>${esc(s.name)}</h2><div class="cat" style="color:${e.color}">${(CATS[s.cat]||["Other"])[0]}${me?` · <span style="color:var(--muted)">${fmtKm(hav(me,s))} from you</span>`:""}</div>
     ${s.note?`<p>${esc(s.note)}</p>`:""}
     <div class="acts"><a class="btn sm primary" href="${gmPlaceUrl(s,d)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>
@@ -885,7 +907,10 @@ $("#dayhead").addEventListener("click",e=>{ if(e.target.id==="editDayNote"){ con
   $("#dayhead").querySelector(".acts").insertAdjacentHTML("beforebegin",`<div class="form"><label class="full">Day note<textarea id="dayNoteIn">${esc(d.note||"")}</textarea></label><div class="full" style="display:flex;gap:6px"><button class="btn sm primary" id="dayNoteSave">Save note</button></div></div>`); e.target.remove(); }
   if(e.target.id==="dayNoteSave"){ plan.days[dayIdx].note=$("#dayNoteIn").value.trim(); save(); renderPanel(); } });
 $("#card").addEventListener("click",e=>{
-  const id=e.target.id;
+  const b=e.target.closest("button"), id=b?b.id:"";
+  if(id==="cMin") return setCardMin(true);
+  if(id==="cExpand") return setCardMin(false);
+  if(id==="cClose"){ if(selId) select(null); else $("#card").hidden=true; return; }
   if(id==="cPrev") go(-1); if(id==="cNext") go(1);
   if(id==="cEdit"){ editing=true; renderCard(); }
   if(id==="fCancel"){ editing=false; renderCard(); }
@@ -896,6 +921,12 @@ $("#card").addEventListener("click",e=>{
     const to=+$("#fDay").value; if(to!==en.di){ plan.days[en.di].stops=plan.days[en.di].stops.filter(x=>x.id!==s.id); plan.days[to].stops.push(s); dayIdx=to; }
     save(); editing=false; renderAll(); select(s.id,{pan:true}); toast("Saved"); }
 });
+(()=>{ let y0=null;
+  $("#card").addEventListener("pointerdown",e=>{ y0=!editing&&e.target.closest(".when,.mini")&&!e.target.closest(".cbtn,.mini .btn")?e.clientY:null; });
+  $("#card").addEventListener("pointerup",e=>{ if(y0==null) return; const dy=e.clientY-y0; y0=null;
+    if(dy>40&&!cardMin&&selId) setCardMin(true); else if(dy<-30&&cardMin) setCardMin(false); });
+  $("#card").addEventListener("pointercancel",()=>{ y0=null; });
+})();
 $("#fitDay").onclick=fitDay; $("#fitTrip").onclick=()=>{ fitTrip(); };
 
 /* menu */
@@ -914,7 +945,8 @@ $("#mDisc").onclick=()=>{ closeMenu();
   m.el.querySelector("[data-go]").onclick=()=>{ [LS.gh,LS.plan,LS.sync,LS.key,LS.mapId].forEach(k=>store.del(k)); location.reload(); }; };
 $("#mIdeas").onclick=()=>{ showIdeas=!showIdeas; renderMap(); $("#menu").hidden=true; };
 function showIdea(i){ const x=plan.ideas[i]; const C=$("#card"); C.hidden=false; selId=null; applySel();
-  C.innerHTML=`<div class="when">Idea · not scheduled</div><h2>${esc(x.name)}</h2><div class="cat">${(CATS[x.cat]||["Other"])[0]}</div>${x.note?`<p>${esc(x.note)}</p>`:""}
+  C.classList.remove("min");
+  C.innerHTML=`${cardCtl(false)}<div class="when">Idea · not scheduled</div><h2>${esc(x.name)}</h2><div class="cat">${(CATS[x.cat]||["Other"])[0]}</div>${x.note?`<p>${esc(x.note)}</p>`:""}
   <div class="acts"><a class="btn sm" href="${gmPlaceUrl(x)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>${dayIdx>=0?`<button class="btn sm primary" id="ideaAdd" data-i="${i}">Add to ${dlabel(plan.days[dayIdx].date)}</button>`:""}</div>`;
   const b=$("#ideaAdd"); if(b) b.onclick=()=>{ plan.ideas.splice(i,1); addStopAt({lat:x.lat,lng:x.lng},x.name,{cat:x.cat,note:x.note}); };
 }
