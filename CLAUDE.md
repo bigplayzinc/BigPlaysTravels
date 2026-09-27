@@ -60,7 +60,7 @@ Results (including "no route") are cached in `localStorage` (`njr-routes-v1`) ke
   "ideas": [ { "name": "…", "cat": "anime", "lat": 0, "lng": 0, "note": "…" } ]
 }
 ```
-- Categories (`cat`): `anime, gaming, theme, night, food, gamble, museum, temple, wild, event, transit, stay`.
+- Categories (`cat`): `anime, gaming, theme, night, food, gamble, museum, temple, wild, craft, event, transit, stay`.
 - Cities with styling: `Tokyo, Osaka, Kyoto, Hakuba` (see `CITY`).
 - Stops are always sorted by time within a day. Times before 05:00 sort after 23:59 (New Year's Eve after-party at 01:00).
 
