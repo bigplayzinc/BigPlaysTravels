@@ -107,8 +107,11 @@ a{color:var(--cyan)}
 
 details.ideas{padding:6px 12px 12px}
 details.ideas summary{cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:8px 4px}
-.idea{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 8px;border-radius:8px}
+.idea{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;border:1px solid transparent;cursor:pointer}
 .idea:hover{background:var(--panel2)}
+.idea.sel{background:#1B2044;border-color:var(--amber)}
+.idea .it{min-width:0}
+.idea small.inote{color:#AEB3CF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .idea b{font:600 13px/1.2 var(--display)}
 .idea small{display:block;color:var(--muted);font-size:11px}
 
@@ -158,6 +161,9 @@ details.ideas summary{cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:
 .dot{width:12px;height:12px;border-radius:50%;background:var(--c);border:2px solid #0A0B12;opacity:.75;cursor:pointer;transform:translateY(6px)}
 .dot:hover{opacity:1;transform:translateY(6px) scale(1.3)}
 .idpin{width:16px;height:16px;border-radius:50%;border:2px dashed #AEB4D6;background:rgba(10,11,18,.7);transform:translateY(8px);cursor:pointer}
+.idpin.sel{position:relative;width:24px;height:24px;border:3px solid var(--amber);background:rgba(255,181,71,.3);box-shadow:0 0 16px var(--amber);transform:translateY(12px)}
+.idpin.sel::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:2px solid var(--amber);animation:pulse 1.6s ease-out infinite}
+.card p.inote{white-space:pre-wrap}
 @keyframes pulse{from{opacity:.9;transform:scale(.7)}to{opacity:0;transform:scale(1.5)}}
 .me{position:relative;width:18px;height:18px;border-radius:50%;background:var(--cyan);border:3px solid #fff;box-shadow:0 0 14px var(--cyan);transform:translateY(9px);pointer-events:none}
 .me::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--cyan);animation:pulse 2s ease-out infinite}
@@ -332,6 +338,7 @@ const EMPTY = () => ({trip:"Japan trip",days:[],ideas:[]});
 let plan = EMPTY(), emptyMsg = "Loading your plan…";
 function normPlan(p){ if(!p||!Array.isArray(p.days)) return null; p.ideas=Array.isArray(p.ideas)?p.ideas:[]; p.days.forEach(d=>{ if(!Array.isArray(d.stops)) d.stops=[]; }); return p; }
 function storedPlan(){ try{ return normPlan(JSON.parse(store.get(LS.plan)||"null")); }catch(_){ return null; } }
+let idea = null, ideasOpen = false;   // open idea card; whether the ideas list is expanded
 let dayIdx = 0, selId = null, editing = false, showIdeas = false, dropMode = false, playTimer = null;
 let seq = [];           // chronological list of {s, d, di, k}
 let routeCache = (()=>{ try{ return JSON.parse(store.get(LS.routes)||"{}"); }catch(_){ return {}; } })();
@@ -484,6 +491,7 @@ function adopt(p,sha){
   if(!changed) return;
   if(dayIdx>=plan.days.length) dayIdx=0;
   if(selId&&!plan.days.some(d=>d.stops.some(s=>s.id===selId))) selId=null;
+  if(idea) idea=plan.ideas.find(x=>x.name===idea.name)||null;
   editing=false; renderAll();
   if(had) toast("Plan updated from another device"); else fitDay();
 }
@@ -661,7 +669,7 @@ async function initMap(){
     disableDefaultUI:true,zoomControl:true,clickableIcons:false,gestureHandling:"greedy"});
   map.addListener("click",e=>{
     if(dropMode){ addStopAt({lat:e.latLng.lat(),lng:e.latLng.lng()},"New spot"); setDrop(false); return; }
-    if(selId){ select(null); }
+    if(selId||idea){ select(null); }
   });
   renderMap(); fitDay();
 }
@@ -673,6 +681,15 @@ function pinEl(e, big){
   el.title=dlabel(e.d.date)+" "+e.s.time+" · "+e.s.name;
   return el;
 }
+// All ideas when "Show ideas on the map" is on; otherwise only the idea that's open, highlighted.
+function renderIdeaMarkers(){
+  ideaMarkers.forEach(m=>m.map=null); ideaMarkers=[];
+  if(!map) return;
+  plan.ideas.forEach(x=>{ if(!showIdeas&&x!==idea) return;
+    const el=document.createElement("div"); el.className="idpin"+(x===idea?" sel":""); el.title="Idea: "+x.name;
+    const m=new AME({map,position:{lat:x.lat,lng:x.lng},content:el,title:x.name,zIndex:x===idea?1500:1});
+    m.addListener("click",()=>showIdea(x,{pan:false})); ideaMarkers.push(m); });
+}
 function clearMap(){ markers.forEach(m=>m.map=null); markers.clear(); lines.forEach(l=>l.setMap(null)); lines=[]; ideaMarkers.forEach(m=>m.map=null); ideaMarkers=[]; }
 function renderMap(){
   if(!map) return; clearMap();
@@ -683,8 +700,7 @@ function renderMap(){
     if(big) m.addListener("dragend",ev=>{ const p=ev.latLng; e.s.lat=+p.lat().toFixed(6); e.s.lng=+p.lng().toFixed(6); save(); toast("Moved "+e.s.name); renderAll(); select(e.s.id,{pan:false}); });
     markers.set(e.s.id,m);
   });
-  if(showIdeas) plan.ideas.forEach((x,i)=>{ const el=document.createElement("div"); el.className="idpin"; el.title="Idea: "+x.name;
-    const m=new AME({map,position:{lat:x.lat,lng:x.lng},content:el,title:x.name}); m.addListener("click",()=>showIdea(i)); ideaMarkers.push(m); });
+  renderIdeaMarkers();
   drawLines();
   applySel();
 }
@@ -721,7 +737,8 @@ function applySel(){
   const e=selId&&entry(selId); if(e){ $("#scrub").value=e.i; scrubLabels(e.i); }
 }
 function select(id,opt={}){
-  selId=id; editing=false; applySel(); renderCard();
+  const hadIdea=idea; selId=id; idea=null; editing=false; applySel(); renderCard();
+  if(hadIdea){ renderIdeaMarkers(); markIdeaRows(); }
   if(!id) return;
   const e=entry(id);
   const row=document.querySelector(`.row[data-id="${id}"]`); row&&row.scrollIntoView({block:"nearest",behavior:"smooth"});
@@ -778,8 +795,11 @@ function ideasHtml(){
   if(!plan.ideas.length) return "";
   const d=plan.days[dayIdx]; const ctr=d.stops[0]||{lat:35.68,lng:139.76};
   const list=plan.ideas.map((x,i)=>({...x,i,km:hav(ctr,x)})).sort((a,b)=>a.km-b.km);
-  return `<details class="ideas"><summary>Ideas not scheduled (${plan.ideas.length})</summary>${list.map(x=>`<div class="idea"><div><b>${esc(x.name)}</b><small>${fmtKm(x.km)} · ${(CATS[x.cat]||["Other"])[0]}</small></div><button class="btn sm" data-addidea="${x.i}">+ Add</button></div>`).join("")}</details>`;
+  return `<details class="ideas"${ideasOpen?" open":""}><summary>Ideas not scheduled (${plan.ideas.length})</summary>${list.map(x=>`<div class="idea${plan.ideas[x.i]===idea?" sel":""}" data-idea="${x.i}"><div class="it"><b>${esc(x.name)}</b><small>${fmtKm(x.km)} · ${(CATS[x.cat]||["Other"])[0]}</small>${x.note?`<small class="inote">${esc(x.note)}</small>`:""}</div><button class="btn sm" data-addidea="${x.i}">+ Add</button></div>`).join("")}</details>`;
 }
+const markIdeaRows = () => document.querySelectorAll(".idea[data-idea]").forEach(r=>r.classList.toggle("sel",plan.ideas[+r.dataset.idea]===idea));
+// remember whether the ideas list is open across re-renders (toggle doesn't bubble, so listen in the capture phase)
+$("#list").addEventListener("toggle",e=>{ if(e.target.matches&&e.target.matches("details.ideas")) ideasOpen=e.target.open; },true);
 
 /* ================= card ================= */
 const catOpts = v => Object.entries(CATS).map(([k,[n]])=>`<option value="${k}"${k===v?" selected":""}>${n}</option>`).join("");
@@ -788,6 +808,7 @@ let cardMin = store.get(LS.cardMin)==="1";   // minimised to a one-line bar; sta
 function setCardMin(on){ cardMin=on; store.set(LS.cardMin,on?"1":"0"); renderCard(); }
 const cardCtl = min => `<div class="cctl">${min?`<button class="cbtn" id="cMin" aria-label="Minimise" title="Minimise">▾</button>`:""}<button class="cbtn" id="cClose" aria-label="Close" title="Close">✕</button></div>`;
 function renderCard(){
+  if(idea) return renderIdeaCard();
   const C=$("#card"); const e=selId&&entry(selId); if(!e){ C.hidden=true; return; }
   const {s,d}=e; C.hidden=false;
   const prev=seq[e.i-1], next=seq[e.i+1];
@@ -888,13 +909,14 @@ $("#results").addEventListener("click",e=>{ const b=e.target.closest("[data-res]
 /* ================= drop mode ================= */
 function setDrop(on){ dropMode=on; document.body.classList.toggle("dropmode",on); $("#dropHint").hidden=!on; $("#dropBtn").classList.toggle("on",on); }
 $("#dropBtn").onclick=()=>{ if(dayIdx===-1){ toast("Pick a day first"); return; } setDrop(!dropMode); };
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(dropMode) setDrop(false); else if(editing){ editing=false; renderCard(); } else if(selId) select(null); }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(dropMode) setDrop(false); else if(editing){ editing=false; renderCard(); } else if(selId||idea) select(null); }
   if(!editing && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ if(e.key==="ArrowRight"&&selId) go(1); if(e.key==="ArrowLeft"&&selId) go(-1); } });
 
 /* ================= events ================= */
 $("#chips").addEventListener("click",e=>{ const b=e.target.closest("[data-day]"); if(!b) return; stopPlay(); dayIdx=+b.dataset.day; selId=null; renderAll(); fitDay(); });
 $("#list").addEventListener("click",e=>{
   const ai=e.target.closest("[data-addidea]"); if(ai){ const x=plan.ideas[+ai.dataset.addidea]; plan.ideas.splice(+ai.dataset.addidea,1); addStopAt({lat:x.lat,lng:x.lng},x.name,{cat:x.cat,note:x.note}); return; }
+  const ir=e.target.closest("[data-idea]"); if(ir){ showIdea(plan.ideas[+ir.dataset.idea]); return; }
   const r=e.target.closest(".row"); if(!r) return;
   if(r.dataset.day!=null&&r.dataset.id==null){ dayIdx=+r.dataset.day; selId=null; renderAll(); fitDay(); return; }
   if(phone()&&split<.05) setSplit(.42,true);   // full-list mode: bring the map back to show the stop
@@ -910,7 +932,8 @@ $("#card").addEventListener("click",e=>{
   const b=e.target.closest("button"), id=b?b.id:"";
   if(id==="cMin") return setCardMin(true);
   if(id==="cExpand") return setCardMin(false);
-  if(id==="cClose"){ if(selId) select(null); else $("#card").hidden=true; return; }
+  if(id==="cClose") return select(null);
+  if(idea&&/^i[A-Z]/.test(id)) return ideaAction(id);
   if(id==="cPrev") go(-1); if(id==="cNext") go(1);
   if(id==="cEdit"){ editing=true; renderCard(); }
   if(id==="fCancel"){ editing=false; renderCard(); }
@@ -924,7 +947,7 @@ $("#card").addEventListener("click",e=>{
 (()=>{ let y0=null;
   $("#card").addEventListener("pointerdown",e=>{ y0=!editing&&e.target.closest(".when,.mini")&&!e.target.closest(".cbtn,.mini .btn")?e.clientY:null; });
   $("#card").addEventListener("pointerup",e=>{ if(y0==null) return; const dy=e.clientY-y0; y0=null;
-    if(dy>40&&!cardMin&&selId) setCardMin(true); else if(dy<-30&&cardMin) setCardMin(false); });
+    if(dy>40&&!cardMin&&(selId||idea)) setCardMin(true); else if(dy<-30&&cardMin) setCardMin(false); });
   $("#card").addEventListener("pointercancel",()=>{ y0=null; });
 })();
 $("#fitDay").onclick=fitDay; $("#fitTrip").onclick=()=>{ fitTrip(); };
@@ -943,12 +966,49 @@ $("#mKey").onclick=()=>{ closeMenu(); showKey(); };
 $("#mDisc").onclick=()=>{ closeMenu();
   const m=modal(`<h2>Disconnect this device?</h2><p>Removes the GitHub token, the Maps key and the saved copy of the plan from this device. The plan in your repo isn't touched.</p>${sync.dirty?`<p class="warn">This device has edits that aren't on GitHub yet. They'll be lost.</p>`:""}<div class="acts"><button class="btn danger" data-go>Disconnect</button><button class="btn" data-close>Cancel</button></div>`);
   m.el.querySelector("[data-go]").onclick=()=>{ [LS.gh,LS.plan,LS.sync,LS.key,LS.mapId].forEach(k=>store.del(k)); location.reload(); }; };
-$("#mIdeas").onclick=()=>{ showIdeas=!showIdeas; renderMap(); $("#menu").hidden=true; };
-function showIdea(i){ const x=plan.ideas[i]; const C=$("#card"); C.hidden=false; selId=null; applySel();
-  C.classList.remove("min");
-  C.innerHTML=`${cardCtl(false)}<div class="when">Idea · not scheduled</div><h2>${esc(x.name)}</h2><div class="cat">${(CATS[x.cat]||["Other"])[0]}</div>${x.note?`<p>${esc(x.note)}</p>`:""}
-  <div class="acts"><a class="btn sm" href="${gmPlaceUrl(x)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>${dayIdx>=0?`<button class="btn sm primary" id="ideaAdd" data-i="${i}">Add to ${dlabel(plan.days[dayIdx].date)}</button>`:""}</div>`;
-  const b=$("#ideaAdd"); if(b) b.onclick=()=>{ plan.ideas.splice(i,1); addStopAt({lat:x.lat,lng:x.lng},x.name,{cat:x.cat,note:x.note}); };
+$("#mIdeas").onclick=()=>{ showIdeas=!showIdeas; renderIdeaMarkers(); $("#menu").hidden=true; };
+
+/* ================= ideas (not scheduled) ================= */
+// `idea` is the open idea object (ideas have no ids); tapping one in the list or on the map opens its card.
+function showIdea(x,opt={}){
+  selId=null; idea=x; editing=false; applySel(); renderIdeaMarkers(); markIdeaRows(); renderCard();
+  if(phone()&&split<.05) setSplit(.42,true);   // full-list mode: bring the map back
+  if(map&&opt.pan!==false){ map.panTo({lat:x.lat,lng:x.lng}); if(map.getZoom()<14) map.setZoom(14); }
+}
+function renderIdeaCard(){
+  const C=$("#card"), x=idea; if(!plan.ideas.includes(x)){ idea=null; C.hidden=true; return; }
+  const cat=(CATS[x.cat]||["Other"])[0], day=dayIdx>=0&&plan.days[dayIdx];
+  C.hidden=false; C.classList.toggle("min",cardMin&&!editing);
+  if(cardMin&&!editing){
+    C.innerHTML=`<div class="mini"><button class="mini-main" id="cExpand" aria-label="Show details"><span style="color:var(--amber)">◆</span><b>IDEA</b><span class="nm">${esc(x.name)}</span><span class="exp">▴</span></button><button class="cbtn" id="cClose" aria-label="Close" title="Close">✕</button></div>`;
+    return;
+  }
+  if(editing){
+    C.innerHTML=`<div class="when"><span style="color:var(--amber)">◆</span> Editing idea</div>
+    <div class="form">
+      <label class="full">Name<input id="iName" value="${esc(x.name)}"></label>
+      <label class="full">Category<select id="iCat">${catOpts(x.cat)}</select></label>
+      <label class="full">Notes<textarea id="iNote" rows="6">${esc(x.note||"")}</textarea></label>
+    </div>
+    <div class="acts"><button class="btn primary sm" id="iSave">Save</button><button class="btn sm" id="iCancel">Cancel</button><span class="grow"></span><button class="btn sm danger" id="iDel">Delete idea</button></div>`;
+    return;
+  }
+  C.innerHTML=`${cardCtl(true)}<div class="when"><span style="color:var(--amber)">◆</span>Idea · not scheduled${me?` · ${fmtKm(hav(me,x))} from you`:""}</div>
+    <h2>${esc(x.name)}</h2><div class="cat" style="color:var(--amber)">${cat}</div>
+    ${x.note?`<p class="inote">${esc(x.note)}</p>`:`<p style="color:var(--muted)">No notes yet. Tap Edit to add some.</p>`}
+    <div class="acts"><a class="btn sm primary" href="${gmPlaceUrl(x)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+      <a class="btn sm" href="${gmHereUrl(x)}" target="_blank" rel="noopener">Directions from here ↗</a>
+      <button class="btn sm" id="iEdit">Edit</button>${day?`<button class="btn sm" id="iAdd">+ Add to ${dlabel(day.date)}</button>`:""}</div>`;
+}
+function ideaAction(id){
+  const x=idea;
+  if(id==="iEdit"){ editing=true; renderCard(); }
+  if(id==="iCancel"){ editing=false; renderCard(); }
+  if(id==="iSave"){ x.name=$("#iName").value.trim()||x.name; x.cat=$("#iCat").value; x.note=$("#iNote").value.trim();
+    editing=false; save(); renderPanel(); renderIdeaMarkers(); renderCard(); toast("Idea saved"); }
+  if(id==="iDel"){ const b=$("#iDel"); if(!b.dataset.armed){ b.dataset.armed="1"; b.textContent="Tap again to delete"; return; }
+    plan.ideas.splice(plan.ideas.indexOf(x),1); idea=null; editing=false; save(); renderPanel(); renderIdeaMarkers(); renderCard(); toast("Deleted "+x.name); }
+  if(id==="iAdd"){ plan.ideas.splice(plan.ideas.indexOf(x),1); addStopAt({lat:x.lat,lng:x.lng},x.name,{cat:x.cat,note:x.note}); }
 }
 $("#mKml").onclick=()=>{
   const x=s=>esc(s); const icon={anime:"pink-circle",gaming:"ltblu-circle",theme:"grn-circle",night:"purple-circle",food:"orange-circle",gamble:"ylw-stars",museum:"blu-circle",temple:"red-circle",event:"ylw-circle",transit:"wht-circle",stay:"wht-blank"};
