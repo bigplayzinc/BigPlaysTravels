@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8000"],
       "port": 8000
+    },
+    {
+      "name": "mock-github",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["dev/mock_github.py"],
+      "port": 8787
     }
   ]
 }

@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Neon Japan Route · Map</title>
+<meta name="theme-color" content="#0A0B12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Japan Route">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -21,12 +29,12 @@ a{color:var(--cyan)}
 :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 [hidden]{display:none!important}
 
-.app{display:grid;grid-template-columns:400px 1fr;height:100%}
-.panel{display:flex;flex-direction:column;min-height:0;background:var(--panel);border-right:1px solid var(--line);position:relative;z-index:2}
+.app{display:grid;grid-template-columns:400px minmax(0,1fr);height:100%;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.panel{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--panel);border-right:1px solid var(--line);position:relative;z-index:2}
 .mapwrap{position:relative;min-width:0;min-height:0}
 #map{position:absolute;inset:0;background:#0C0E1C}
 @media (max-width:820px){
-  .app{grid-template-columns:1fr;grid-template-rows:52% 48%}
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:52% 48%}
   .mapwrap{grid-row:1}
   .panel{grid-row:2;border-right:0;border-top:1px solid var(--line)}
 }
@@ -37,6 +45,13 @@ a{color:var(--cyan)}
 .phead h1 .p{color:var(--pink);text-shadow:0 0 14px rgba(255,61,139,.5)}
 .phead h1 .c{color:var(--cyan);text-shadow:0 0 14px rgba(55,226,255,.4)}
 .phead .sub{margin-top:5px;font:500 11px/1.3 var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.sync{display:inline-flex;align-items:center;gap:6px;margin-top:7px;padding:0;background:none;border:0;cursor:pointer;font:600 10px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.sync.ok i{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.sync.busy i{background:var(--cyan);animation:blink 1s ease-in-out infinite}
+.sync.off i{background:var(--amber)}
+.sync.err{color:var(--bad)} .sync.err i{background:var(--bad)}
+@keyframes blink{50%{opacity:.25}}
 .iconbtn{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
 .iconbtn:hover{border-color:var(--cyan)}
 .menu{position:absolute;right:12px;top:54px;z-index:10;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:6px;display:flex;flex-direction:column;min-width:220px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
@@ -143,7 +158,23 @@ details.ideas summary{cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:
 .setup ol{color:#C3C7DD;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .setup code{font:12px var(--mono);background:var(--panel2);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
 .setup .form{grid-template-columns:1fr}
+.setup .acts,.modal .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+details.help{margin-top:18px;color:#C3C7DD}
+details.help summary{cursor:pointer;color:var(--cyan)}
 .err{color:var(--bad);font-size:13px;margin-top:8px}
+.modal{position:fixed;inset:0;z-index:55;background:rgba(5,6,12,.72);display:grid;place-items:center;padding:16px;overflow:auto}
+.modal .box{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:16px 18px;width:min(440px,100%);box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.modal h2{margin:0 0 6px;font:700 19px/1.2 var(--display)}
+.modal p{margin:8px 0;color:#C3C7DD;font-size:13px}
+.modal .form{grid-template-columns:1fr}
+.modal .warn{color:var(--amber);font-size:12px}
+.qr{background:#fff;border-radius:10px;padding:10px;margin:10px auto;width:min(260px,100%);aspect-ratio:1;display:grid;place-items:center;color:#333;font-size:12px}
+.qr svg{width:100%;height:100%}
+.scanv{width:100%;border-radius:10px;background:#000;aspect-ratio:1;object-fit:cover;margin-top:8px}
+.nomap{position:absolute;inset:0;z-index:2;display:grid;place-items:center;text-align:center;padding:90px 24px 24px;color:var(--muted)}
+.nomap p{max-width:320px;margin:0 auto 12px}
+/* iOS zooms into inputs smaller than 16px */
+@media (pointer:coarse){input,select,textarea{font-size:16px!important}}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:9px 14px;font-size:13px;max-width:calc(100% - 32px)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -153,35 +184,45 @@ details.ideas summary{cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:
 <div class="setup" id="setup" hidden>
   <div class="box">
     <h1><span style="color:var(--pink)">NEON</span> JAPAN <span style="color:var(--cyan)">ROUTE</span></h1>
-    <p>This map runs on Google Maps with your own API key. Google's monthly free usage easily covers one person planning a trip. The key stays in this browser only.</p>
-    <ol>
-      <li>Go to <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener">Google Cloud console → Maps</a>, create a project and add billing (required, but personal use stays in the free tier).</li>
-      <li>Enable <b>Maps JavaScript API</b>, <b>Places API (New)</b> and <b>Routes API</b>.</li>
-      <li>Credentials → <b>Create API key</b>. Restrict it to those three APIs and to the websites you'll open this from, e.g. <code>http://localhost:8000/*</code>.</li>
-      <li>Run <code>python -m http.server 8000</code> in this file's folder and open <code>http://localhost:8000/</code> plus the file name. Or host the file on any static site.</li>
-    </ol>
+    <p>Your plan lives in a private GitHub repo. Connect this device to it once; after that every change syncs between your devices.</p>
     <div class="form">
-      <label>Google Maps API key<input id="keyIn" autocomplete="off" spellcheck="false" placeholder="AIza…"></label>
-      <label>Map ID (optional: keep DEMO_MAP_ID unless you made your own)<input id="mapIdIn" value="DEMO_MAP_ID" spellcheck="false"></label>
+      <label>Pairing code or GitHub token<input id="connIn" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="njr1.… or github_pat_…"></label>
+      <label>Plan repo<input id="repoIn" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="owner/name"></label>
+      <label>This device's name (shows in the repo history)<input id="devIn" autocomplete="off" spellcheck="false"></label>
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" id="keyGo">Open the map</button></div>
-    <div class="err" id="keyErr" hidden></div>
+    <div class="acts"><button class="btn primary" id="connGo">Connect</button><button class="btn" id="scanGo">Scan pairing QR</button></div>
+    <div class="err" id="connErr" hidden></div>
+    <details class="help"><summary>Already connected on another device?</summary>
+      <p>On that device open ⋯ → <b>Connect another device</b>, then tap <b>Scan pairing QR</b> here (or paste the pairing code).</p>
+    </details>
+    <details class="help"><summary>First device: create a GitHub token</summary>
+      <ol>
+        <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → new fine-grained token</a>.</li>
+        <li>Name it “Japan Route” and set the expiration to a date after your trip.</li>
+        <li>Repository access: <b>Only select repositories</b> → pick your plan repo.</li>
+        <li>Permissions → Repository permissions → <b>Contents: Read and write</b>.</li>
+        <li>Generate the token, copy it and paste it above.</li>
+      </ol>
+    </details>
   </div>
 </div>
 
 <div class="app" id="app">
   <aside class="panel" aria-label="Itinerary">
     <div class="phead">
-      <div><h1><span class="p">NEON</span> JAPAN <span class="c">ROUTE</span></h1><div class="sub" id="sub"></div></div>
+      <div><h1><span class="p">NEON</span> JAPAN <span class="c">ROUTE</span></h1><div class="sub" id="sub"></div><button class="sync" id="sync" hidden><i></i><span></span></button></div>
       <button class="iconbtn" id="menuBtn" aria-label="Menu" aria-haspopup="true">⋯</button>
     </div>
     <div class="menu" id="menu" hidden>
+      <button id="mSync">Sync now</button>
+      <button id="mHistory">Version history (undo) ↗</button>
+      <button id="mPair">Connect another device</button>
+      <button id="mIdeas">Show ideas on the map</button>
       <button id="mExport">Export plan (.json)</button>
       <label>Import plan (.json)<input type="file" id="mImport" accept="application/json,.json" hidden></label>
       <button id="mKml">Export for Google My Maps (.kml)</button>
-      <button id="mIdeas">Show ideas on the map</button>
-      <button id="mReset">Reset to the original plan</button>
-      <button id="mKey">Change API key</button>
+      <button id="mKey">Google Maps key</button>
+      <button id="mDisc">Disconnect this device</button>
     </div>
     <nav class="chips" id="chips" aria-label="Days"></nav>
     <div class="dayhead" id="dayhead"></div>
@@ -200,6 +241,7 @@ details.ideas summary{cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:
 
   <main class="mapwrap" id="mapwrap">
     <div id="map" role="application" aria-label="Map"></div>
+    <div class="nomap" id="nomap" hidden><div><p id="nomapMsg"></p><button class="btn primary sm" id="nomapBtn">Add Google Maps key</button></div></div>
     <div class="topbar">
       <div class="glass scrub">
         <span class="lbl" id="scrubA"></span>
@@ -228,22 +270,22 @@ const CATS = {
   museum:["Museum"], temple:["Temple & shrine"], event:["Event"], transit:["Transit"], stay:["Stay"]
 };
 const CITY = {Tokyo:["東京","#FF3D8B"],Osaka:["大阪","#FFB547"],Kyoto:["京都","#4DF0A8"],Hakuba:["白馬","#37E2FF"]};
-const LS = {plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1"};
-let SEED = {trip:"Japan trip",days:[],ideas:[]};   // replaced by plan.json at boot
+const LS = {plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1", gh:"njr-gh", sync:"njr-sync", api:"njr-gh-api"};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const clone = o => JSON.parse(JSON.stringify(o));
 const store = { get(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }, del(k){ try{ localStorage.removeItem(k); }catch(_){} } };
 
-let plan = SEED;
-function storedPlan(){ try{ const p=JSON.parse(store.get(LS.plan)||"null"); if(p&&Array.isArray(p.days)) return p; }catch(_){} return null; }
-async function loadSeed(){ try{ const r=await fetch("plan.json",{cache:"no-store"}); if(r.ok){ const p=await r.json(); if(p&&Array.isArray(p.days)){ p.ideas=p.ideas||[]; return p; } } }catch(_){} return SEED; }
+const EMPTY = () => ({trip:"Japan trip",days:[],ideas:[]});
+let plan = EMPTY(), emptyMsg = "Loading your plan…";
+function normPlan(p){ if(!p||!Array.isArray(p.days)) return null; p.ideas=Array.isArray(p.ideas)?p.ideas:[]; p.days.forEach(d=>{ if(!Array.isArray(d.stops)) d.stops=[]; }); return p; }
+function storedPlan(){ try{ return normPlan(JSON.parse(store.get(LS.plan)||"null")); }catch(_){ return null; } }
 let dayIdx = 0, selId = null, editing = false, showIdeas = false, dropMode = false, playTimer = null;
 let seq = [];           // chronological list of {s, d, di, k}
 let routeCache = (()=>{ try{ return JSON.parse(store.get(LS.routes)||"{}"); }catch(_){ return {}; } })();
 let routesDisabled = false;
 
-function save(){ store.set(LS.plan, JSON.stringify(plan)); }
+// Every edit is kept on this device at once and pushed to GitHub shortly after (see "sync").
+function save(){ store.set(LS.plan, JSON.stringify(plan)); sync.dirty=true; saveSync(); setStatus("busy","Saving…"); clearTimeout(pushTimer); pushTimer=setTimeout(push,1200); }
 function toast(m){ const t=document.createElement("div"); t.className="toast"; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),3600); }
 
 /* ================= time + colour ================= */
@@ -299,21 +341,263 @@ async function legRoute(a,b){
   res.km=km; routeCache[k]=res; store.set(LS.routes, JSON.stringify(routeCache)); return res;
 }
 
+/* ================= GitHub storage (private plan repo) ================= */
+// The plan is plan.json in a private repo, read and written with the contents API.
+// Every save is a commit there, so the repo history doubles as undo.
+const DEFAULT_REPO = "bigplayzinc/japan-plan";
+const ghBase = () => store.get(LS.api) || "https://api.github.com";   // override only for local testing (dev/mock_github.py)
+function ghCfg(){ try{ const c=JSON.parse(store.get(LS.gh)||"null"); return c&&c.repo&&c.token?c:null; }catch(_){ return null; } }
+class GhError extends Error{ constructor(status,msg){ super(msg||"GitHub error "+status); this.status=status; } }
+async function ghFetch(method,path,{body,cfg=ghCfg(),keepalive=false}={}){
+  const headers={Authorization:"Bearer "+cfg.token,Accept:"application/vnd.github+json"};
+  const data=body&&JSON.stringify(body); if(data) headers["Content-Type"]="application/json";
+  const r=await fetch(ghBase()+"/repos/"+cfg.repo+path,{method,headers,body:data,cache:"no-store",keepalive:keepalive&&(!data||data.length<60000)});
+  if(r.ok) return r.json();
+  let msg=""; try{ msg=(await r.json()).message; }catch(_){}
+  throw new GhError(r.status,msg);
+}
+const b64enc = s => { const b=new TextEncoder().encode(s); let bin=""; for(let i=0;i<b.length;i+=0x8000) bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return btoa(bin); };
+const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,"")),c=>c.charCodeAt(0)));
+async function ghGet(file,cfg){ try{ const j=await ghFetch("GET","/contents/"+file,{cfg}); return {sha:j.sha,text:b64dec(j.content)}; }catch(e){ if(e.status===404) return null; throw e; } }
+async function ghPut(file,text,sha,message,opt={}){ const j=await ghFetch("PUT","/contents/"+file,{...opt,body:{message,content:b64enc(text),...(sha?{sha}:{})}}); return j.content.sha; }
+// One stop per line keeps the repo history readable: a diff shows which stop changed.
+function planText(p=plan){
+  const j=JSON.stringify, {days=[],ideas=[],...top}=p;
+  const list=(items,ind)=>"["+(items.length?"\n"+items.join(",\n")+"\n"+ind:"")+"]";
+  const day=d=>{ const {stops=[],...rest}=d, h=j(rest); return "    "+(h==="{}"?"{":h.slice(0,-1)+",")+'"stops":'+list(stops.map(s=>"      "+j(s)),"    ")+"}"; };
+  const lines=Object.entries(top).map(([k,v])=>"  "+j(k)+": "+j(v));
+  lines.push('  "days": '+list(days.map(day),"  "), '  "ideas": '+list(ideas.map(x=>"    "+j(x)),"  "));
+  return "{\n"+lines.join(",\n")+"\n}\n";
+}
+function guessDevice(){ const u=navigator.userAgent;
+  if(/iPhone/.test(u)) return "iPhone"; if(/iPad/.test(u)||/Macintosh/.test(u)&&navigator.maxTouchPoints>1) return "iPad"; if(/Android/.test(u)) return "Android";
+  if(/Windows/.test(u)) return navigator.maxTouchPoints>1?"Surface":"PC"; if(/Mac/.test(u)) return "Mac"; return "browser"; }
+
+/* ================= sync ================= */
+// sync.sha = plan.json version this device last saw; sync.dirty = edits not on GitHub yet.
+const sync = (()=>{ try{ return JSON.parse(store.get(LS.sync)||"null")||{}; }catch(_){ return {}; } })();
+let syncBusy=false, syncAgain=false, pushTimer=null, lastPull=0, conflictOpen=false, syncErr="";
+let replaced=[];   // versions this device just saved over; a read returning one soon after is stale, not a change
+function saveSync(){ store.set(LS.sync, JSON.stringify({sha:sync.sha||null, dirty:!!sync.dirty})); }
+const hhmm = () => { const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); };
+function setStatus(kind,text){ const el=$("#sync"); el.hidden=false; el.className="sync "+kind; el.querySelector("span").textContent=text; el.title=kind==="err"?syncErr:"Tap to sync now"; }
+const typing = () => editing || /INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"");
+
+async function push(opt={}){
+  clearTimeout(pushTimer);
+  if(!ghCfg()||!sync.dirty||conflictOpen) return;
+  if(syncBusy){ syncAgain=true; return; }
+  syncBusy=true; setStatus("busy","Saving…");
+  const text=planText(); let failed=null;
+  try{
+    const sha=await ghPut("plan.json",text,sync.sha,"Edit from "+(ghCfg().device||"a device"),opt);
+    if(sync.sha) replaced=[...replaced.slice(-9),{sha:sync.sha,t:Date.now()}];
+    sync.sha=sha; if(planText()===text) sync.dirty=false;   // edits made during the upload stay dirty
+    saveSync(); setStatus("ok","Saved "+hhmm());
+  }catch(e){ failed=e; }
+  finally{ syncBusy=false; }
+  if(failed&&(failed.status===409||failed.status===422)) return pull({force:true,failed});   // someone else saved first
+  if(failed) return syncFail(failed);
+  if(syncAgain){ syncAgain=false; push(); }
+}
+async function pull(opt={}){
+  if(!ghCfg()||syncBusy||conflictOpen) return;
+  if(!opt.force&&(Date.now()-lastPull<15000||typing())) return;
+  lastPull=Date.now(); syncBusy=true; if(!opt.quiet) setStatus("busy","Syncing…");
+  let next="ok";
+  try{
+    const f=await ghGet("plan.json");
+    if(!f) throw new GhError(404,"plan.json is missing from "+ghCfg().repo);
+    const stale=replaced.some(r=>r.sha===f.sha&&Date.now()-r.t<120000);
+    if(f.sha===sync.sha||stale) next = opt.failed ? opt.failed : sync.dirty ? "push" : "ok";
+    else{
+      let remote=null; try{ remote=normPlan(JSON.parse(f.text)); }catch(_){}
+      if(!remote) throw new GhError(0,"plan.json in "+ghCfg().repo+" isn't a valid plan");
+      if(sync.dirty&&planText(remote)!==planText()) next=()=>conflict(remote,f.sha);
+      else adopt(remote,f.sha);
+    }
+  }catch(e){ next=e; }
+  finally{ syncBusy=false; }
+  if(next==="push") push();
+  else if(next==="ok") setStatus("ok","Synced "+hhmm());
+  else if(typeof next==="function") next();
+  else syncFail(next);
+}
+function adopt(p,sha){
+  const had=plan.days.length>0, changed=planText(p)!==planText();
+  plan=p; sync.sha=sha; sync.dirty=false; saveSync(); store.set(LS.plan,JSON.stringify(plan));
+  if(!changed) return;
+  if(dayIdx>=plan.days.length) dayIdx=0;
+  if(selId&&!plan.days.some(d=>d.stops.some(s=>s.id===selId))) selId=null;
+  editing=false; renderAll();
+  if(had) toast("Plan updated from another device"); else fitDay();
+}
+function syncFail(e){
+  if(!(e instanceof GhError)){ syncErr=""; setStatus("off",sync.dirty?"Offline · edits kept here":"Offline"); return; }   // network: retried later
+  const repo=(ghCfg()||{}).repo;
+  syncErr = e.status===401 ? "GitHub didn't accept this device's token (expired or revoked)."
+    : e.status===403&&/rate limit/i.test(e.message) ? "GitHub rate limit reached. It retries in a minute."
+    : e.status===403 ? "The token can't write to "+repo+". It needs Contents: Read and write."
+    : e.status===404 ? "Can't find "+repo+" or its plan.json. Check the token still has access to that repo."
+    : e.message;
+  setStatus("err","Sync problem · tap");
+  if(e.status===401) showConnect(syncErr+" Connect again; edits on this device are kept.");
+}
+function conflict(remote,sha){
+  conflictOpen=true; setStatus("err","Needs your choice");
+  const m=modal(`<h2>Plan changed on another device</h2>
+    <p>This device has edits that aren't on GitHub yet, and the plan was also saved from somewhere else in the meantime.</p>
+    <p><b>Keep this device's version</b>: the other version is replaced, but stays in the repo history.<br><b>Use the other version</b>: this device's unsaved edits are dropped.</p>
+    <div class="acts"><button class="btn primary sm" data-act="mine">Keep this device's version</button><button class="btn sm" data-act="theirs">Use the other version</button><button class="btn sm" data-act="copy">Download this device's version</button></div>`,{sticky:true});
+  m.el.addEventListener("click",e=>{ const a=e.target.dataset.act; if(!a) return;
+    if(a==="copy"){ download("japan-plan-"+(ghCfg().device||"device").replace(/\W+/g,"-")+".json",planText(),"application/json"); return; }
+    m.close(); conflictOpen=false;
+    if(a==="mine"){ sync.sha=sha; saveSync(); push(); }
+    else { adopt(remote,sha); setStatus("ok","Synced "+hhmm()); } });
+}
+$("#sync").onclick=()=>{ if($("#sync").classList.contains("err")&&syncErr) toast(syncErr); if(sync.dirty) push(); else pull({force:true}); };
+document.addEventListener("visibilitychange",()=>{ if(document.hidden){ if(sync.dirty) push({keepalive:true}); } else if(sync.dirty) push(); else pull({quiet:true}); });
+addEventListener("online",()=>{ if(sync.dirty) push(); else pull({force:true,quiet:true}); });
+setInterval(()=>{ if(document.hidden) return; if(sync.dirty) push(); else pull({quiet:true}); },60000);
+
+/* ================= dialogs ================= */
+function modal(html,{sticky=false}={}){
+  const el=document.createElement("div"); el.className="modal"; el.innerHTML=`<div class="box" role="dialog" aria-modal="true">${html}</div>`;
+  document.body.appendChild(el);
+  const m={el,onClose:null,close(){ if(!el.isConnected) return; el.remove(); if(m.onClose) m.onClose(); }};
+  el.addEventListener("click",e=>{ if(e.target.closest("[data-close]")||(!sticky&&e.target===el)) m.close(); });
+  if(!sticky) el.addEventListener("keydown",e=>{ if(e.key==="Escape"){ e.stopPropagation(); m.close(); } });
+  const f=el.querySelector("input,button"); if(f) setTimeout(()=>f.focus(),30);
+  return m;
+}
+const scripts={};
+function loadScript(src,integrity){ return scripts[src] || (scripts[src]=new Promise((res,rej)=>{
+  const s=document.createElement("script"); s.src=src; s.integrity=integrity; s.crossOrigin="anonymous";
+  s.onload=res; s.onerror=()=>{ delete scripts[src]; s.remove(); rej(new Error("Couldn't load "+src)); }; document.head.appendChild(s); })); }
+const QR_LIB=["https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js","sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k"];
+const SCAN_LIB=["https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js","sha384-b5Ya4Bq3qCyz39m2ISh+4DxjAIljdeFwK/BsXLuj9gugaNwAcj/ia15fxNZL9Nlx"];
+
+/* ================= connect + pairing ================= */
+// A pairing code carries the repo and token so other devices don't have to type a token.
+const b64u = s => b64enc(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const pairCode = c => "njr1."+b64u(JSON.stringify({r:c.repo,t:c.token}));
+function parsePair(s){ const m=String(s||"").match(/njr1\.([\w-]+)/); if(!m) return null;
+  try{ const o=JSON.parse(b64dec(m[1].replace(/-/g,"+").replace(/_/g,"/"))); return o.r&&o.t?{repo:o.r,token:o.t}:null; }catch(_){ return null; } }
+function readPairHash(){ const m=location.hash.match(/pair=([^&]+)/); if(!m) return null;
+  history.replaceState(null,"",location.pathname+location.search);   // don't leave the token in the address bar
+  return parsePair(decodeURIComponent(m[1])); }
+const connErr = msg => { const e=$("#connErr"); e.hidden=!msg; e.textContent=msg||""; };
+function showConnect(msg,pair){
+  const c=ghCfg(); $("#setup").hidden=false;
+  $("#connIn").value=pair?pairCode(pair):"";
+  $("#repoIn").value=(pair&&pair.repo)||(c&&c.repo)||DEFAULT_REPO;
+  $("#devIn").value=(c&&c.device)||guessDevice();
+  connErr(msg);
+}
+$("#connIn").addEventListener("input",()=>{ const p=parsePair($("#connIn").value); if(p) $("#repoIn").value=p.repo; });
+$("#connIn").addEventListener("keydown",e=>{ if(e.key==="Enter") connect(); });
+$("#connGo").onclick=()=>connect();
+async function connect(){
+  const raw=$("#connIn").value.trim(), p=parsePair(raw);
+  const cfg={repo:(p?p.repo:$("#repoIn").value.trim()).replace(/^https?:\/\/github\.com\//,"").replace(/\/+$/,""), token:p?p.token:raw, device:$("#devIn").value.trim()||guessDevice()};
+  if(!cfg.token) return connErr("Paste a pairing code or a GitHub token first.");
+  if(!/^[\w.-]+\/[\w.-]+$/.test(cfg.repo)) return connErr("The plan repo should look like owner/name.");
+  const b=$("#connGo"); b.disabled=true; b.textContent="Connecting…"; connErr("");
+  try{
+    await ghFetch("GET","",{cfg});
+    if(!await ghGet("plan.json",cfg)) throw new GhError(0,"There's no plan.json in "+cfg.repo+".");
+    const prev=ghCfg();
+    if(!prev||prev.repo!==cfg.repo){ sync.sha=null; sync.dirty=false; replaced=[]; saveSync(); store.del(LS.plan); plan=EMPTY(); dayIdx=0; selId=null; }
+    store.set(LS.gh,JSON.stringify(cfg));
+    renderAll(); startApp(); toast("Connected to "+cfg.repo);
+  }catch(e){
+    connErr(!(e instanceof GhError) ? "Couldn't reach GitHub. Check your connection."
+      : e.status===401 ? "GitHub didn't accept that token. Check you copied all of it and that it hasn't expired."
+      : e.status===404 ? "Can't see "+cfg.repo+" with that token. Check the repo name and that the token has access to this repo."
+      : e.message);
+  }finally{ b.disabled=false; b.textContent="Connect"; }
+}
+$("#scanGo").onclick=async()=>{
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return connErr("This browser can't use the camera here. Paste the pairing code instead.");
+  const m=modal(`<h2>Scan pairing QR</h2><p>On a connected device: ⋯ → Connect another device, then point this camera at the code.</p><video class="scanv" playsinline muted></video><div class="acts"><button class="btn sm" data-close>Cancel</button></div>`);
+  let stream=null; m.onClose=()=>{ if(stream) stream.getTracks().forEach(t=>t.stop()); stream=false; };
+  try{
+    await loadScript(...SCAN_LIB);
+    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+    if(stream===false){ s.getTracks().forEach(t=>t.stop()); return; } stream=s;
+    const v=m.el.querySelector("video"); v.srcObject=s; await v.play();
+    const c=document.createElement("canvas"), g=c.getContext("2d",{willReadFrequently:true});
+    const tick=()=>{ if(!stream) return;
+      if(v.videoWidth){ const w=Math.min(720,v.videoWidth), h=Math.round(v.videoHeight*w/v.videoWidth); c.width=w; c.height=h; g.drawImage(v,0,0,w,h);
+        const q=jsQR(g.getImageData(0,0,w,h).data,w,h,{inversionAttempts:"dontInvert"});
+        if(q&&parsePair(q.data)){ m.close(); $("#connIn").value=q.data; $("#repoIn").value=parsePair(q.data).repo; connect(); return; } }
+      requestAnimationFrame(tick); };
+    tick();
+  }catch(e){ m.close(); connErr(e.name==="NotAllowedError"?"Camera access was blocked. Allow it for this site, or paste the pairing code instead.":e.message); }
+};
+async function showPair(){
+  const c=ghCfg(), code=pairCode(c), url=location.origin+location.pathname+"#pair="+code;
+  const m=modal(`<h2>Connect another device</h2>
+    <p><b>iPhone:</b> open this app, tap <b>Scan pairing QR</b> and point it here. Or scan with the Camera app to open it in Safari.<br><b>Surface / PC:</b> paste the pairing code below.</p>
+    <div class="qr">Loading QR…</div>
+    <div class="form"><label>Pairing code<input readonly value="${esc(code)}"></label></div>
+    <div class="acts"><button class="btn sm" data-copy>Copy pairing code</button><span class="grow"></span><button class="btn sm primary" data-close>Done</button></div>
+    <p class="warn">Anyone with this code or QR can read and edit your plan. Don't share or post it.</p>`);
+  m.el.querySelector("[data-copy]").onclick=()=>{ const i=m.el.querySelector("input"); (navigator.clipboard?navigator.clipboard.writeText(code):Promise.reject()).then(()=>toast("Pairing code copied"),()=>{ i.focus(); i.select(); }); };
+  try{ await loadScript(...QR_LIB); const q=qrcode(0,"M"); q.addData(url); q.make(); m.el.querySelector(".qr").innerHTML=q.createSvgTag({cellSize:4,margin:3,scalable:true}); }
+  catch(_){ m.el.querySelector(".qr").textContent="Couldn't load the QR code generator. Use the pairing code instead."; }
+}
+
+/* ================= Google Maps key (kept in the plan repo as config.json) ================= */
+async function loadConfig(){
+  try{ const f=await ghGet("config.json"); if(!f) return; const c=JSON.parse(f.text);
+    if(c.mapsKey) store.set(LS.key,c.mapsKey); if(c.mapId) store.set(LS.mapId,c.mapId); }catch(_){}   // offline: use this device's copy
+}
+function showKey(msg){
+  const m=modal(`<h2>Google Maps key</h2>
+    <p>Saved in your private plan repo, so your other devices pick it up automatically.</p>
+    <div class="form">
+      <label>API key<input id="keyIn" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="AIza…" value="${esc(store.get(LS.key)||"")}"></label>
+      <label>Map ID (keep DEMO_MAP_ID unless you made your own)<input id="mapIdIn" spellcheck="false" autocapitalize="off" value="${esc(store.get(LS.mapId)||"DEMO_MAP_ID")}"></label>
+    </div>
+    <details class="help"><summary>Getting a key</summary><ol>
+      <li>In <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener">Google Cloud → Maps</a>, enable <b>Maps JavaScript API</b>, <b>Places API (New)</b> and <b>Routes API</b>. Billing must be linked; one person's use stays in the free tier.</li>
+      <li>Credentials → Create API key. Restrict it to those three APIs and to the websites you open this app from, including <code>${esc(location.origin)}/*</code>.</li>
+    </ol></details>
+    <div class="err" ${msg?"":"hidden"}>${esc(msg||"")}</div>
+    <div class="acts"><button class="btn primary" data-save>Save</button><button class="btn" data-close>Cancel</button></div>`);
+  const err=m.el.querySelector(".err"), b=m.el.querySelector("[data-save]");
+  b.onclick=async()=>{
+    if(b.dataset.done) return location.reload();
+    const k=m.el.querySelector("#keyIn").value.trim(), id=m.el.querySelector("#mapIdIn").value.trim()||"DEMO_MAP_ID";
+    if(!k){ err.hidden=false; err.textContent="Paste your API key first."; return; }
+    store.set(LS.key,k); store.set(LS.mapId,id); b.disabled=true; b.textContent="Saving…";
+    try{ const f=await ghGet("config.json"); let cur={}; try{ cur=f?JSON.parse(f.text):{}; }catch(_){}
+      await ghPut("config.json",JSON.stringify({...cur,mapsKey:k,mapId:id},null,2)+"\n",f&&f.sha,"Set Google Maps key from "+(ghCfg().device||"a device"));
+      location.reload(); }
+    catch(e){ err.hidden=false; err.textContent="Saved on this device, but not to GitHub ("+(e.message||"offline")+"), so your other devices won't get it yet."; b.disabled=false; b.textContent="Continue"; b.dataset.done="1"; }
+  };
+}
+function noMap(msg){ $("#nomap").hidden=false; $("#nomapMsg").textContent=msg; }
+$("#nomapBtn").onclick=()=>showKey();
+
 /* ================= map ================= */
 let map=null, AME=null, markers=new Map(), ideaMarkers=[], lines=[], routeToken=0;
 function loadMaps(key){
   return new Promise((resolve,reject)=>{
     window.__njrInit=()=>resolve();
-    window.gm_authFailure=()=>{ showSetup("Google rejected this key. Check that Maps JavaScript API is enabled and this site is allowed in the key's restrictions."); };
+    window.gm_authFailure=()=>{ noMap("Google rejected the Maps key."); showKey("Google rejected this key. Check that Maps JavaScript API is enabled and "+location.origin+"/* is allowed in the key's website restrictions."); };
     const s=document.createElement("script");
     s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&v=weekly&loading=async&callback=__njrInit&libraries=marker,geometry,places";
     s.async=true; s.onerror=()=>reject(new Error("Couldn't load Google Maps. Check your connection."));
     document.head.appendChild(s);
   });
 }
+let mapStarted=false;
 async function initMap(){
-  const key=store.get(LS.key); if(!key){ showSetup(); return; }
-  try{ await loadMaps(key); }catch(e){ showSetup(e.message); return; }
+  const key=store.get(LS.key); if(!key){ noMap("Add your Google Maps key to see the map. The itinerary works without it."); return; }
+  if(mapStarted) return; mapStarted=true; $("#nomap").hidden=true;
+  try{ await loadMaps(key); }catch(e){ mapStarted=false; noMap(e.message); return; }
   const {Map}=await google.maps.importLibrary("maps");
   ({AdvancedMarkerElement:AME}=await google.maps.importLibrary("marker"));
   await google.maps.importLibrary("geometry");
@@ -326,9 +610,6 @@ async function initMap(){
   });
   renderMap(); fitDay();
 }
-function showSetup(msg){ $("#setup").hidden=false; $("#keyIn").value=store.get(LS.key)||""; $("#mapIdIn").value=store.get(LS.mapId)||"DEMO_MAP_ID"; const e=$("#keyErr"); e.hidden=!msg; e.textContent=msg||""; }
-$("#keyGo").onclick=()=>{ const k=$("#keyIn").value.trim(); if(!k){ showSetup("Paste your API key first."); return; } store.set(LS.key,k); store.set(LS.mapId,$("#mapIdIn").value.trim()||"DEMO_MAP_ID"); location.reload(); };
-
 function pinEl(e, big){
   const el=document.createElement("div");
   if(big){ el.className="pin"; el.textContent=e.k+1; }
@@ -413,6 +694,7 @@ function legHtml(a,b,r){
 }
 function renderPanel(){
   const DH=$("#dayhead"), L=$("#list");
+  if(!plan.days.length){ DH.innerHTML=`<p class="note">${esc(emptyMsg)}</p>`; L.innerHTML=""; return; }
   if(dayIdx===-1){
     DH.innerHTML=`<div class="meta"><span>Whole trip</span></div><input value="${esc(plan.trip||"Japan trip")}" id="tripTitle" aria-label="Trip name"><p class="note">Colour runs from the first stop (cyan) to the last (amber). Pick a day to see its route.</p>`;
     L.innerHTML=plan.days.map((d,i)=>{ const f=seq.find(e=>e.di===i); const c=CITY[d.city]||["","#aaa"];
@@ -576,10 +858,15 @@ $("#menuBtn").onclick=e=>{ e.stopPropagation(); $("#menu").hidden=!$("#menu").hi
 document.addEventListener("click",e=>{ if(!e.target.closest("#menu")&&!e.target.closest("#menuBtn")) $("#menu").hidden=true; });
 function download(name,text,type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); }
 $("#mExport").onclick=()=>download("japan-plan.json",JSON.stringify(plan,null,2),"application/json");
-$("#mImport").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const p=JSON.parse(await f.text()); if(!Array.isArray(p.days)) throw 0; p.ideas=p.ideas||[]; plan=p; save(); dayIdx=0; selId=null; renderAll(); fitDay(); toast("Plan imported"); }catch(_){ toast("That file isn't a plan export"); } e.target.value=""; };
-$("#mReset").onclick=()=>{ if($("#mReset").dataset.armed){ plan=clone(SEED); save(); dayIdx=0; selId=null; renderAll(); fitDay(); toast("Reset to the original plan"); delete $("#mReset").dataset.armed; $("#mReset").textContent="Reset to the original plan"; }
-  else { $("#mReset").dataset.armed="1"; $("#mReset").textContent="Click again to confirm reset"; } };
-$("#mKey").onclick=()=>showSetup();
+$("#mImport").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const p=normPlan(JSON.parse(await f.text())); if(!p) throw 0; plan=p; save(); dayIdx=0; selId=null; renderAll(); fitDay(); toast("Plan imported"); }catch(_){ toast("That file isn't a plan export"); } e.target.value=""; };
+const closeMenu = () => { $("#menu").hidden=true; };
+$("#mSync").onclick=()=>{ closeMenu(); if(sync.dirty) push(); else pull({force:true}); };
+$("#mHistory").onclick=()=>{ closeMenu(); window.open("https://github.com/"+ghCfg().repo+"/commits/main/plan.json","_blank","noopener"); };
+$("#mPair").onclick=()=>{ closeMenu(); showPair(); };
+$("#mKey").onclick=()=>{ closeMenu(); showKey(); };
+$("#mDisc").onclick=()=>{ closeMenu();
+  const m=modal(`<h2>Disconnect this device?</h2><p>Removes the GitHub token, the Maps key and the saved copy of the plan from this device. The plan in your repo isn't touched.</p>${sync.dirty?`<p class="warn">This device has edits that aren't on GitHub yet. They'll be lost.</p>`:""}<div class="acts"><button class="btn danger" data-go>Disconnect</button><button class="btn" data-close>Cancel</button></div>`);
+  m.el.querySelector("[data-go]").onclick=()=>{ [LS.gh,LS.plan,LS.sync,LS.key,LS.mapId].forEach(k=>store.del(k)); location.reload(); }; };
 $("#mIdeas").onclick=()=>{ showIdeas=!showIdeas; renderMap(); $("#menu").hidden=true; };
 function showIdea(i){ const x=plan.ideas[i]; const C=$("#card"); C.hidden=false; selId=null; applySel();
   C.innerHTML=`<div class="when">Idea · not scheduled</div><h2>${esc(x.name)}</h2><div class="cat">${(CATS[x.cat]||["Other"])[0]}</div>${x.note?`<p>${esc(x.note)}</p>`:""}
@@ -598,12 +885,22 @@ $("#mKml").onclick=()=>{
 };
 
 /* ================= boot ================= */
-(async()=>{
-  SEED = await loadSeed();
-  plan = storedPlan() || clone(SEED);
-  rebuildSeq(); renderChips(); renderPanel(); setupScrub();
+// Show this device's saved copy straight away, then catch up with GitHub.
+function startApp(){
+  $("#setup").hidden=true;
   initMap();
+  Promise.all([pull({force:true}), loadConfig()]).then(()=>{
+    if(!plan.days.length){ emptyMsg="Couldn't load your plan from GitHub, and there's no saved copy on this device yet. Check your connection."; renderPanel(); }
+    initMap(); });
+}
+(()=>{
+  plan = storedPlan() || EMPTY();
+  rebuildSeq(); renderChips(); renderPanel(); setupScrub();
+  const pair=readPairHash(), c=ghCfg();
+  if(!c||pair&&(pair.repo!==c.repo||pair.token!==c.token)){ showConnect("",pair); return; }
+  startApp();
 })();
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")) navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
 </script>
 </body>
