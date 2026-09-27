@@ -1,0 +1,5 @@
+.DS_Store
+*.local.*
+*.zip
+# the itinerary is private: it lives in bigplayzinc/japan-plan
+plan.json

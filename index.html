@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Neon Japan Route · Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --ink:#0A0B12; --panel:#10132A; --panel2:#171B36; --line:#252B4E; --line2:#343B66;
+  --text:#E8EAF5; --muted:#8C92B6; --faint:#5A6088;
+  --pink:#FF3D8B; --cyan:#37E2FF; --amber:#FFB547; --ok:#4DF0A8; --bad:#FF6B6B;
+  --display:"Chakra Petch",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font:14px/1.45 var(--body)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--cyan)}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+[hidden]{display:none!important}
+
+.app{display:grid;grid-template-columns:400px 1fr;height:100%}
+.panel{display:flex;flex-direction:column;min-height:0;background:var(--panel);border-right:1px solid var(--line);position:relative;z-index:2}
+.mapwrap{position:relative;min-width:0;min-height:0}
+#map{position:absolute;inset:0;background:#0C0E1C}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;grid-template-rows:52% 48%}
+  .mapwrap{grid-row:1}
+  .panel{grid-row:2;border-right:0;border-top:1px solid var(--line)}
+}
+
+/* panel */
+.phead{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.phead h1{margin:0;font:700 22px/1 var(--display);letter-spacing:.03em}
+.phead h1 .p{color:var(--pink);text-shadow:0 0 14px rgba(255,61,139,.5)}
+.phead h1 .c{color:var(--cyan);text-shadow:0 0 14px rgba(55,226,255,.4)}
+.phead .sub{margin-top:5px;font:500 11px/1.3 var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.iconbtn{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+.iconbtn:hover{border-color:var(--cyan)}
+.menu{position:absolute;right:12px;top:54px;z-index:10;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:6px;display:flex;flex-direction:column;min-width:220px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.menu button,.menu label{background:none;border:0;text-align:left;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px}
+.menu button:hover,.menu label:hover{background:var(--line)}
+
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;border-bottom:1px solid var(--line);scrollbar-width:thin;flex:0 0 auto}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:6px 9px 7px;cursor:pointer;text-align:left;min-width:62px;position:relative;overflow:hidden}
+.chip .dw{font:600 10px/1 var(--mono);color:var(--muted);letter-spacing:.06em}
+.chip .dn{font:700 17px/1.1 var(--display);margin-top:2px}
+.chip .bar{position:absolute;left:0;right:0;bottom:0;height:3px}
+.chip[aria-pressed="true"]{border-color:var(--text);background:#1E2346}
+.chip.all .dn{font-size:13px;margin-top:4px}
+
+.dayhead{padding:12px 16px 8px}
+.dayhead .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:600 11px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.city{padding:3px 7px;border-radius:5px;font-weight:700}
+.dayhead input{width:100%;margin:6px 0 0 -6px;padding:3px 6px;background:transparent;border:1px solid transparent;border-radius:6px;font:700 19px/1.25 var(--display)}
+.dayhead input:hover,.dayhead input:focus{border-color:var(--line2);background:var(--panel2)}
+.dayhead .note{margin:4px 0 0;color:#AEB3CF;font-size:13px}
+.dayhead .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+.list{flex:1 1 auto;overflow-y:auto;padding:4px 12px 12px;min-height:0}
+.row{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:8px 8px;border-radius:10px;border:1px solid transparent;cursor:pointer}
+.row:hover{background:var(--panel2)}
+.row.sel{background:#1B2044;border-color:var(--line2)}
+.badge{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 var(--mono);color:#0A0B12;box-shadow:0 0 0 2px #0A0B12,0 0 12px var(--glow,transparent)}
+.row .nm{font:600 14px/1.25 var(--display)}
+.row .sm{font:500 11px/1.3 var(--mono);color:var(--muted);margin-top:2px;letter-spacing:.02em}
+.row .tm{font:600 13px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--text)}
+.tag{display:inline-block;font:700 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:3px 5px;border-radius:4px;margin-left:6px;vertical-align:1px}
+.tag.book{color:var(--amber);border:1px solid rgba(255,181,71,.5)}
+.tag.ok{color:var(--ok);border:1px solid rgba(77,240,168,.45)}
+.leg{display:flex;align-items:center;gap:8px;margin-left:21px;padding:3px 0 3px 14px;border-left:2px dashed var(--line2);font:500 11px/1.3 var(--mono);color:var(--muted);min-height:26px}
+.leg .md{font-weight:700;color:var(--text)}
+.leg a{margin-left:auto;text-decoration:none;font-weight:600;white-space:nowrap}
+.leg .ln{color:#AEB3CF}
+
+.pfoot{border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:8px;flex-wrap:wrap;flex:0 0 auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:600;line-height:1.1;white-space:nowrap;text-decoration:none;color:var(--text)}
+.btn:hover{border-color:var(--cyan)}
+.btn.primary{background:var(--pink);border-color:var(--pink);color:#12000A}
+.btn.sm{padding:6px 9px;font-size:12px}
+.btn.on{border-color:var(--cyan);color:var(--cyan)}
+.btn.danger{color:var(--bad)}
+.grow{flex:1}
+
+.search{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel2)}
+.search input{width:100%;background:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:9px 10px}
+.results{display:flex;flex-direction:column;gap:4px;margin-top:8px;max-height:220px;overflow:auto}
+.res{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 9px;cursor:pointer;text-align:left}
+.res:hover{border-color:var(--cyan)}
+.res b{display:block;font:600 13px/1.25 var(--display)}
+.res small{color:var(--muted);font-size:11px}
+
+details.ideas{padding:6px 12px 12px}
+details.ideas summary{cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:8px 4px}
+.idea{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 8px;border-radius:8px}
+.idea:hover{background:var(--panel2)}
+.idea b{font:600 13px/1.2 var(--display)}
+.idea small{display:block;color:var(--muted);font-size:11px}
+
+/* map overlays */
+.topbar{position:absolute;left:12px;right:12px;top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;pointer-events:none;z-index:3}
+.topbar > *{pointer-events:auto}
+.glass{background:rgba(16,19,42,.88);backdrop-filter:blur(8px);border:1px solid var(--line2);border-radius:10px}
+.scrub{display:flex;align-items:center;gap:10px;padding:7px 10px;flex:1 1 320px;min-width:0}
+.scrub input[type=range]{flex:1;min-width:80px;accent-color:var(--pink)}
+.scrub .lbl{font:600 11px/1.2 var(--mono);white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+.ramp{height:6px;border-radius:3px;width:100%}
+.tools{display:flex;gap:6px;padding:5px}
+.dropmode #map{cursor:crosshair}
+.hintbar{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:3;padding:7px 12px;font-size:12px}
+
+.card{position:absolute;left:12px;bottom:12px;width:min(390px,calc(100% - 24px));z-index:3;padding:12px 14px;max-height:calc(100% - 90px);overflow:auto}
+.card .when{font:600 11px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card h2{margin:6px 0 2px;font:700 20px/1.2 var(--display)}
+.card .cat{font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.card p{margin:8px 0 0;color:#C3C7DD}
+.card .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.card .nav{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font:500 11px/1 var(--mono);color:var(--muted)}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.form .full{grid-column:1/-1}
+.form label{display:flex;flex-direction:column;gap:4px;font:600 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.form input,.form select,.form textarea{background:var(--ink);border:1px solid var(--line2);border-radius:7px;padding:7px 8px;font:400 13px/1.3 var(--body);letter-spacing:0;text-transform:none;min-width:0;width:100%}
+.form textarea{min-height:64px;resize:vertical}
+
+/* markers */
+.pin{position:relative;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 var(--mono);color:#0A0B12;border:2px solid #0A0B12;box-shadow:0 0 0 1.5px var(--c),0 0 14px var(--c);background:var(--c);transition:transform .15s ease;cursor:pointer;transform:translateY(15px)}
+.pin.sel{transform:translateY(15px) scale(1.35);z-index:5}
+.pin.sel::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:2px solid var(--c);animation:pulse 1.6s ease-out infinite}
+.pin.hl{transform:translateY(15px) scale(1.2)}
+.pin .tt{position:absolute;left:36px;top:50%;transform:translateY(-50%);white-space:nowrap;font:600 12px/1 var(--display);color:var(--text);background:rgba(10,11,18,.85);border:1px solid var(--line2);padding:4px 7px;border-radius:6px;pointer-events:none}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--c);border:2px solid #0A0B12;opacity:.75;cursor:pointer;transform:translateY(6px)}
+.dot:hover{opacity:1;transform:translateY(6px) scale(1.3)}
+.idpin{width:16px;height:16px;border-radius:50%;border:2px dashed #AEB4D6;background:rgba(10,11,18,.7);transform:translateY(8px);cursor:pointer}
+@keyframes pulse{from{opacity:.9;transform:scale(.7)}to{opacity:0;transform:scale(1.5)}}
+
+/* setup */
+.setup{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at 20% 10%,rgba(55,226,255,.12),transparent 55%),radial-gradient(ellipse at 90% 90%,rgba(255,61,139,.14),transparent 55%),var(--ink);overflow:auto;padding:24px 16px}
+.setup .box{max-width:620px;margin:6vh auto 0}
+.setup h1{font:700 34px/1.05 var(--display);margin:0}
+.setup p{color:#C3C7DD}
+.setup ol{color:#C3C7DD;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.setup code{font:12px var(--mono);background:var(--panel2);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+.setup .form{grid-template-columns:1fr}
+.err{color:var(--bad);font-size:13px;margin-top:8px}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:9px 14px;font-size:13px;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="setup" id="setup" hidden>
+  <div class="box">
+    <h1><span style="color:var(--pink)">NEON</span> JAPAN <span style="color:var(--cyan)">ROUTE</span></h1>
+    <p>This map runs on Google Maps with your own API key. Google's monthly free usage easily covers one person planning a trip. The key stays in this browser only.</p>
+    <ol>
+      <li>Go to <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener">Google Cloud console → Maps</a>, create a project and add billing (required, but personal use stays in the free tier).</li>
+      <li>Enable <b>Maps JavaScript API</b>, <b>Places API (New)</b> and <b>Routes API</b>.</li>
+      <li>Credentials → <b>Create API key</b>. Restrict it to those three APIs and to the websites you'll open this from, e.g. <code>http://localhost:8000/*</code>.</li>
+      <li>Run <code>python -m http.server 8000</code> in this file's folder and open <code>http://localhost:8000/</code> plus the file name. Or host the file on any static site.</li>
+    </ol>
+    <div class="form">
+      <label>Google Maps API key<input id="keyIn" autocomplete="off" spellcheck="false" placeholder="AIza…"></label>
+      <label>Map ID (optional: keep DEMO_MAP_ID unless you made your own)<input id="mapIdIn" value="DEMO_MAP_ID" spellcheck="false"></label>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary" id="keyGo">Open the map</button></div>
+    <div class="err" id="keyErr" hidden></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <aside class="panel" aria-label="Itinerary">
+    <div class="phead">
+      <div><h1><span class="p">NEON</span> JAPAN <span class="c">ROUTE</span></h1><div class="sub" id="sub"></div></div>
+      <button class="iconbtn" id="menuBtn" aria-label="Menu" aria-haspopup="true">⋯</button>
+    </div>
+    <div class="menu" id="menu" hidden>
+      <button id="mExport">Export plan (.json)</button>
+      <label>Import plan (.json)<input type="file" id="mImport" accept="application/json,.json" hidden></label>
+      <button id="mKml">Export for Google My Maps (.kml)</button>
+      <button id="mIdeas">Show ideas on the map</button>
+      <button id="mReset">Reset to the original plan</button>
+      <button id="mKey">Change API key</button>
+    </div>
+    <nav class="chips" id="chips" aria-label="Days"></nav>
+    <div class="dayhead" id="dayhead"></div>
+    <div class="list" id="list"></div>
+    <div class="search" id="searchBox" hidden>
+      <div style="display:flex;gap:6px"><input id="searchIn" placeholder="Search Google Maps, e.g. ramen near Shibuya" autocomplete="off"><button class="btn sm" id="searchClose">Close</button></div>
+      <div class="results" id="results"></div>
+    </div>
+    <div class="pfoot">
+      <button class="btn primary sm" id="addBtn">+ Add place</button>
+      <button class="btn sm" id="dropBtn">Drop a pin</button>
+      <span class="grow"></span>
+      <button class="btn sm" id="playBtn">▶ Play day</button>
+    </div>
+  </aside>
+
+  <main class="mapwrap" id="mapwrap">
+    <div id="map" role="application" aria-label="Map"></div>
+    <div class="topbar">
+      <div class="glass scrub">
+        <span class="lbl" id="scrubA"></span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0">
+          <div class="ramp" id="ramp"></div>
+          <input type="range" id="scrub" min="0" max="0" value="0" aria-label="Trip timeline">
+        </div>
+        <span class="lbl" id="scrubB"></span>
+      </div>
+      <div class="glass tools">
+        <button class="btn sm" id="fitDay">Fit day</button>
+        <button class="btn sm" id="fitTrip">Whole trip</button>
+      </div>
+    </div>
+    <div class="glass hintbar" id="dropHint" hidden>Click the map to drop a pin · Esc to cancel</div>
+    <div class="glass card" id="card" hidden></div>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ================= data ================= */
+const CATS = {
+  anime:["Anime"], gaming:["Gaming"], theme:["Theme park"], night:["Nightlife"], food:["Food & markets"], gamble:["Gambling"],
+  museum:["Museum"], temple:["Temple & shrine"], event:["Event"], transit:["Transit"], stay:["Stay"]
+};
+const CITY = {Tokyo:["東京","#FF3D8B"],Osaka:["大阪","#FFB547"],Kyoto:["京都","#4DF0A8"],Hakuba:["白馬","#37E2FF"]};
+const LS = {plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1"};
+let SEED = {trip:"Japan trip",days:[],ideas:[]};   // replaced by plan.json at boot
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const store = { get(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }, del(k){ try{ localStorage.removeItem(k); }catch(_){} } };
+
+let plan = SEED;
+function storedPlan(){ try{ const p=JSON.parse(store.get(LS.plan)||"null"); if(p&&Array.isArray(p.days)) return p; }catch(_){} return null; }
+async function loadSeed(){ try{ const r=await fetch("plan.json",{cache:"no-store"}); if(r.ok){ const p=await r.json(); if(p&&Array.isArray(p.days)){ p.ideas=p.ideas||[]; return p; } } }catch(_){} return SEED; }
+let dayIdx = 0, selId = null, editing = false, showIdeas = false, dropMode = false, playTimer = null;
+let seq = [];           // chronological list of {s, d, di, k}
+let routeCache = (()=>{ try{ return JSON.parse(store.get(LS.routes)||"{}"); }catch(_){ return {}; } })();
+let routesDisabled = false;
+
+function save(){ store.set(LS.plan, JSON.stringify(plan)); }
+function toast(m){ const t=document.createElement("div"); t.className="toast"; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),3600); }
+
+/* ================= time + colour ================= */
+const tkey = t => { const [h,m]=(t||"12:00").split(":").map(Number); return ((h<5?h+24:h)*60)+(m||0); };
+const dateObj = d => new Date(d+"T12:00:00");
+const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const dlabel = d => { const o=dateObj(d); return DOW[o.getDay()]+" "+o.getDate()+" "+MON[o.getMonth()]; };
+const RAMP = [[0,[55,226,255]],[.34,[124,108,255]],[.68,[255,61,139]],[1,[255,181,71]]];
+function ramp(t){ t=Math.max(0,Math.min(1,t)); for(let i=1;i<RAMP.length;i++){ const [t1,c1]=RAMP[i]; if(t<=t1){ const [t0,c0]=RAMP[i-1]; const f=(t-t0)/(t1-t0); return "rgb("+c0.map((v,j)=>Math.round(v+(c1[j]-v)*f)).join(",")+")"; } } return "rgb(255,181,71)"; }
+const rampCss = "linear-gradient(90deg,"+RAMP.map(([t,c])=>`rgb(${c}) ${t*100}%`).join(",")+")";
+
+function rebuildSeq(){
+  plan.days.forEach(d=>d.stops.sort((a,b)=>tkey(a.time)-tkey(b.time)));
+  seq=[]; plan.days.forEach((d,di)=>d.stops.forEach((s,k)=>seq.push({s,d,di,k})));
+  const n=Math.max(seq.length-1,1); seq.forEach((e,i)=>{ e.i=i; e.color=ramp(i/n); });
+}
+const entry = id => seq.find(e=>e.s.id===id);
+
+/* ================= geo ================= */
+function hav(a,b){const R=6371,t=Math.PI/180;const dl=(b.lat-a.lat)*t,dg=(b.lng-a.lng)*t;const h=Math.sin(dl/2)**2+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+const fmtKm = k => k<1? Math.round(k*1000)+" m" : (k<10? k.toFixed(1): Math.round(k))+" km";
+const fmtDur = s => { const m=Math.round(s/60); return m<60? m+" min" : Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"); };
+const ll = s => s.lat+","+s.lng;
+function gmPlaceUrl(s,d){ if(s.placeId) return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(s.name)+"&query_place_id="+s.placeId;
+  if(s.cat==="stay"||s.cat==="transit") return "https://www.google.com/maps/search/?api=1&query="+ll(s);
+  return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent((s.q||s.name.split("·")[0].trim())+" "+(d?.city||"")); }
+const gmDirUrl = (a,b,mode) => "https://www.google.com/maps/dir/?api=1&origin="+ll(a)+"&destination="+ll(b)+"&travelmode="+(mode||"transit");
+
+/* ================= routes (Google Routes API) ================= */
+async function routesApi(a,b,mode){
+  const key=store.get(LS.key);
+  const body={origin:{location:{latLng:{latitude:a.lat,longitude:a.lng}}},destination:{location:{latLng:{latitude:b.lat,longitude:b.lng}}},travelMode:mode};
+  const r=await fetch("https://routes.googleapis.com/directions/v2:computeRoutes",{method:"POST",headers:{"Content-Type":"application/json","X-Goog-Api-Key":key,
+    "X-Goog-FieldMask":"routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs.steps.travelMode,routes.legs.steps.transitDetails.transitLine.nameShort,routes.legs.steps.transitDetails.transitLine.name"},body:JSON.stringify(body)});
+  if(r.status===403||r.status===401){ routesDisabled=true; throw new Error("denied"); }
+  if(!r.ok) return null;
+  const j=await r.json(); const rt=j.routes&&j.routes[0]; if(!rt) return null;
+  const lines=[]; (rt.legs||[]).forEach(l=>(l.steps||[]).forEach(st=>{ const tl=st.transitDetails&&st.transitDetails.transitLine; if(tl){ const n=tl.nameShort||tl.name; if(n&&!lines.includes(n)) lines.push(n); } }));
+  return {mode, sec:parseInt(rt.duration)||0, m:rt.distanceMeters||0, poly:rt.polyline&&rt.polyline.encodedPolyline, lines};
+}
+async function legRoute(a,b){
+  const km=hav(a,b); const k=[a.lat,a.lng,b.lat,b.lng].map(v=>(+v).toFixed(5)).join(",");
+  if(routeCache[k]) return routeCache[k];
+  let res={mode:"NONE",km};
+  if(km<0.08) res={mode:"SAME",km};
+  else if(km>100) res={mode:"RAIL",km,sec:Math.round((20+km/180*60)*60)};
+  else if(!routesDisabled){
+    try{
+      if(km<=1.5) res=(await routesApi(a,b,"WALK"))||res;
+      else{ res=(await routesApi(a,b,"TRANSIT")); if(!res && km<=3) res=await routesApi(a,b,"WALK"); if(!res) res={mode:"NONE",km}; }
+    }catch(e){ if(routesDisabled) toast("Routes API isn't enabled for this key, so legs show as straight lines."); return {mode:"NONE",km}; }
+  }
+  res.km=km; routeCache[k]=res; store.set(LS.routes, JSON.stringify(routeCache)); return res;
+}
+
+/* ================= map ================= */
+let map=null, AME=null, markers=new Map(), ideaMarkers=[], lines=[], routeToken=0;
+function loadMaps(key){
+  return new Promise((resolve,reject)=>{
+    window.__njrInit=()=>resolve();
+    window.gm_authFailure=()=>{ showSetup("Google rejected this key. Check that Maps JavaScript API is enabled and this site is allowed in the key's restrictions."); };
+    const s=document.createElement("script");
+    s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&v=weekly&loading=async&callback=__njrInit&libraries=marker,geometry,places";
+    s.async=true; s.onerror=()=>reject(new Error("Couldn't load Google Maps. Check your connection."));
+    document.head.appendChild(s);
+  });
+}
+async function initMap(){
+  const key=store.get(LS.key); if(!key){ showSetup(); return; }
+  try{ await loadMaps(key); }catch(e){ showSetup(e.message); return; }
+  const {Map}=await google.maps.importLibrary("maps");
+  ({AdvancedMarkerElement:AME}=await google.maps.importLibrary("marker"));
+  await google.maps.importLibrary("geometry");
+  map=new Map($("#map"),{center:{lat:35.68,lng:139.76},zoom:12,mapId:store.get(LS.mapId)||"DEMO_MAP_ID",
+    colorScheme:(google.maps.ColorScheme&&google.maps.ColorScheme.DARK)||"DARK",
+    disableDefaultUI:true,zoomControl:true,clickableIcons:false,gestureHandling:"greedy"});
+  map.addListener("click",e=>{
+    if(dropMode){ addStopAt({lat:e.latLng.lat(),lng:e.latLng.lng()},"New spot"); setDrop(false); return; }
+    if(selId){ select(null); }
+  });
+  renderMap(); fitDay();
+}
+function showSetup(msg){ $("#setup").hidden=false; $("#keyIn").value=store.get(LS.key)||""; $("#mapIdIn").value=store.get(LS.mapId)||"DEMO_MAP_ID"; const e=$("#keyErr"); e.hidden=!msg; e.textContent=msg||""; }
+$("#keyGo").onclick=()=>{ const k=$("#keyIn").value.trim(); if(!k){ showSetup("Paste your API key first."); return; } store.set(LS.key,k); store.set(LS.mapId,$("#mapIdIn").value.trim()||"DEMO_MAP_ID"); location.reload(); };
+
+function pinEl(e, big){
+  const el=document.createElement("div");
+  if(big){ el.className="pin"; el.textContent=e.k+1; }
+  else el.className="dot";
+  el.style.setProperty("--c",e.color);
+  el.title=dlabel(e.d.date)+" "+e.s.time+" · "+e.s.name;
+  return el;
+}
+function clearMap(){ markers.forEach(m=>m.map=null); markers.clear(); lines.forEach(l=>l.setMap(null)); lines=[]; ideaMarkers.forEach(m=>m.map=null); ideaMarkers=[]; }
+function renderMap(){
+  if(!map) return; clearMap();
+  seq.forEach(e=>{
+    const big = dayIdx===-1 ? false : e.di===dayIdx;
+    const m=new AME({map,position:{lat:e.s.lat,lng:e.s.lng},content:pinEl(e,big),title:e.s.name,zIndex:big?100+e.k:e.i,gmpDraggable:big});
+    m.addListener("click",()=>{ if(e.di!==dayIdx && dayIdx!==-1){ dayIdx=e.di; renderAll(); } select(e.s.id,{pan:false}); });
+    if(big) m.addListener("dragend",ev=>{ const p=ev.latLng; e.s.lat=+p.lat().toFixed(6); e.s.lng=+p.lng().toFixed(6); save(); toast("Moved "+e.s.name); renderAll(); select(e.s.id,{pan:false}); });
+    markers.set(e.s.id,m);
+  });
+  if(showIdeas) plan.ideas.forEach((x,i)=>{ const el=document.createElement("div"); el.className="idpin"; el.title="Idea: "+x.name;
+    const m=new AME({map,position:{lat:x.lat,lng:x.lng},content:el,title:x.name}); m.addListener("click",()=>showIdea(i)); ideaMarkers.push(m); });
+  drawLines();
+  applySel();
+}
+function glowLine(path,color,dashed,weight){
+  if(dashed){ lines.push(new google.maps.Polyline({map,path,strokeOpacity:0,icons:[{icon:{path:"M 0,-1 0,1",strokeOpacity:.9,strokeColor:color,scale:3},offset:"0",repeat:"12px"}]})); return; }
+  lines.push(new google.maps.Polyline({map,path,strokeColor:color,strokeOpacity:.22,strokeWeight:(weight||5)+7,zIndex:1}));
+  lines.push(new google.maps.Polyline({map,path,strokeColor:color,strokeOpacity:.95,strokeWeight:weight||5,zIndex:2,
+    icons:[{icon:{path:google.maps.SymbolPath.FORWARD_OPEN_ARROW,scale:2.2,strokeColor:"#0A0B12",strokeWeight:2},offset:"50%"}]}));
+}
+async function drawLines(){
+  const token=++routeToken;
+  if(dayIdx===-1){
+    plan.days.forEach(d=>{ if(d.stops.length<2) return; const es=d.stops.map(s=>entry(s.id));
+      lines.push(new google.maps.Polyline({map,path:d.stops.map(s=>({lat:s.lat,lng:s.lng})),strokeColor:es[0].color,strokeOpacity:.7,strokeWeight:2,geodesic:true})); });
+    return;
+  }
+  const d=plan.days[dayIdx];
+  for(let i=1;i<d.stops.length;i++){
+    const a=d.stops[i-1], b=d.stops[i]; const col=entry(a.id).color;
+    const r=await legRoute(a,b); if(token!==routeToken) return;
+    if(r.mode==="SAME") continue;
+    if(r.poly){ glowLine(google.maps.geometry.encoding.decodePath(r.poly),col,false,r.mode==="WALK"?4:5); }
+    else glowLine([{lat:a.lat,lng:a.lng},{lat:b.lat,lng:b.lng}],col,true);
+    const legEl=document.querySelector(`.leg[data-to="${b.id}"]`); if(legEl) legEl.innerHTML=legHtml(a,b,r);
+  }
+}
+
+/* ================= selection ================= */
+function applySel(){
+  markers.forEach((m,id)=>{ const el=m.content; if(el&&el.classList){ el.classList.toggle("sel",id===selId);
+    const tt=el.querySelector(".tt"); if(id===selId&&el.classList.contains("pin")){ if(!tt){ const s=document.createElement("span"); s.className="tt"; s.textContent=entry(id).s.name; el.appendChild(s);} } else if(tt) tt.remove();
+    m.zIndex = id===selId? 1000 : (el.classList.contains("pin")? 100+entry(id).k : entry(id).i); } });
+  document.querySelectorAll(".row").forEach(r=>r.classList.toggle("sel",r.dataset.id===selId));
+  const e=selId&&entry(selId); if(e){ $("#scrub").value=e.i; scrubLabels(e.i); }
+}
+function select(id,opt={}){
+  selId=id; editing=false; applySel(); renderCard();
+  if(!id) return;
+  const e=entry(id);
+  const row=document.querySelector(`.row[data-id="${id}"]`); row&&row.scrollIntoView({block:"nearest",behavior:"smooth"});
+  if(map&&opt.pan!==false){ map.panTo({lat:e.s.lat,lng:e.s.lng}); if(opt.zoom&&map.getZoom()<opt.zoom) map.setZoom(opt.zoom); }
+}
+function hover(id,on){ const m=markers.get(id); if(m&&m.content) m.content.classList.toggle("hl",on); }
+
+/* ================= panel ================= */
+function renderChips(){
+  let h=`<button class="chip all" aria-pressed="${dayIdx===-1}" data-day="-1"><div class="dw">TRIP</div><div class="dn">All</div><div class="bar" style="background:${rampCss}"></div></button>`;
+  plan.days.forEach((d,i)=>{ const o=dateObj(d.date); const f=seq.find(e=>e.di===i); const c=CITY[d.city]||["","#aaa"];
+    h+=`<button class="chip" aria-pressed="${i===dayIdx}" data-day="${i}" title="${esc(d.title)}"><div class="dw">${DOW[o.getDay()].toUpperCase()} <span style="color:${c[1]}">${c[0]}</span></div><div class="dn">${o.getDate()} ${MON[o.getMonth()]}</div><div class="bar" style="background:${f?f.color:"var(--line)"}"></div></button>`; });
+  $("#chips").innerHTML=h; const s=$("#chips").querySelector('[aria-pressed="true"]'); s&&s.scrollIntoView({block:"nearest",inline:"center"});
+  const f=plan.days[0], l=plan.days[plan.days.length-1]; $("#sub").textContent=f?dlabel(f.date)+" → "+dlabel(l.date)+" · "+seq.length+" stops":"";
+}
+function legHtml(a,b,r){
+  const km=hav(a,b);
+  if(!r) return `<span>${fmtKm(km)}</span><span class="ln">routing…</span><a href="${gmDirUrl(a,b)}" target="_blank" rel="noopener">Directions ↗</a>`;
+  if(r.mode==="SAME") return `<span>same place</span>`;
+  const gm = r.mode==="WALK"? gmDirUrl(a,b,"walking") : gmDirUrl(a,b,"transit");
+  if(r.mode==="WALK") return `<span class="md">🚶 ${fmtDur(r.sec)}</span><span>${fmtKm(r.m/1000)}</span><a href="${gm}" target="_blank" rel="noopener">Open ↗</a>`;
+  if(r.mode==="TRANSIT") return `<span class="md">🚆 ${fmtDur(r.sec)}</span><span class="ln">${esc((r.lines||[]).slice(0,3).join(" → ")||fmtKm(r.m/1000))}</span><a href="${gm}" target="_blank" rel="noopener">Open ↗</a>`;
+  if(r.mode==="RAIL") return `<span class="md">🚄 ~${fmtDur(r.sec)}</span><span>${fmtKm(km)} · long-distance</span><a href="${gm}" target="_blank" rel="noopener">Times ↗</a>`;
+  return `<span>${fmtKm(km)}</span><span class="ln">transit times in Google Maps</span><a href="${gm}" target="_blank" rel="noopener">Directions ↗</a>`;
+}
+function renderPanel(){
+  const DH=$("#dayhead"), L=$("#list");
+  if(dayIdx===-1){
+    DH.innerHTML=`<div class="meta"><span>Whole trip</span></div><input value="${esc(plan.trip||"Japan trip")}" id="tripTitle" aria-label="Trip name"><p class="note">Colour runs from the first stop (cyan) to the last (amber). Pick a day to see its route.</p>`;
+    L.innerHTML=plan.days.map((d,i)=>{ const f=seq.find(e=>e.di===i); const c=CITY[d.city]||["","#aaa"];
+      return `<div class="row" data-day="${i}"><span class="badge" style="background:${f?f.color:"var(--line)"};--glow:${f?f.color:"transparent"}">${i+1}</span>
+        <div><div class="nm">${esc(d.title)}</div><div class="sm">${dlabel(d.date)} · <span style="color:${c[1]}">${esc(d.city)}</span> · ${d.stops.length} stops</div></div><span class="tm">›</span></div>`; }).join("");
+    $("#playBtn").textContent="▶ Play trip"; return;
+  }
+  $("#playBtn").textContent="▶ Play day";
+  const d=plan.days[dayIdx]; const c=CITY[d.city]||["","#aaa"];
+  const booking=d.stops.filter(s=>s.booked===false).length;
+  DH.innerHTML=`<div class="meta"><span class="city" style="background:${c[1]}22;color:${c[1]}">${c[0]} ${esc(d.city)}</span><span>${dlabel(d.date)}</span><span>Day ${dayIdx+1}/${plan.days.length}</span>${booking?`<span style="color:var(--amber)">${booking} to book</span>`:""}</div>
+    <input value="${esc(d.title)}" id="dayTitle" aria-label="Day title">${d.note?`<p class="note">${esc(d.note)}</p>`:""}
+    <div class="acts"><button class="btn sm" id="editDayNote">Edit day note</button>${d.stops.length>1?`<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/${d.stops.map(s=>ll(s)).slice(0,10).join("/")}">Day in Google Maps ↗</a>`:""}</div>`;
+  let h="";
+  d.stops.forEach((s,k)=>{ const e=entry(s.id);
+    if(k>0){ const a=d.stops[k-1]; const kk=[a.lat,a.lng,s.lat,s.lng].map(v=>(+v).toFixed(5)).join(","); h+=`<div class="leg" data-to="${s.id}">${legHtml(a,s,routeCache[kk])}</div>`; }
+    const tag=s.booked===false?`<span class="tag book">book</span>`:s.booked?`<span class="tag ok">booked</span>`:"";
+    h+=`<div class="row${s.id===selId?" sel":""}" data-id="${s.id}"><span class="badge" style="background:${e.color};--glow:${e.color}">${k+1}</span>
+      <div><div class="nm">${esc(s.name)}${tag}</div><div class="sm">${(CATS[s.cat]||["Other"])[0]} · #${e.i+1} of trip</div></div><span class="tm">${esc(s.time)}</span></div>`;
+  });
+  if(!d.stops.length) h=`<p class="note" style="padding:8px">No stops yet. Use “Add place” or “Drop a pin”.</p>`;
+  h+=ideasHtml();
+  L.innerHTML=h;
+}
+function ideasHtml(){
+  if(!plan.ideas.length) return "";
+  const d=plan.days[dayIdx]; const ctr=d.stops[0]||{lat:35.68,lng:139.76};
+  const list=plan.ideas.map((x,i)=>({...x,i,km:hav(ctr,x)})).sort((a,b)=>a.km-b.km);
+  return `<details class="ideas"><summary>Ideas not scheduled (${plan.ideas.length})</summary>${list.map(x=>`<div class="idea"><div><b>${esc(x.name)}</b><small>${fmtKm(x.km)} · ${(CATS[x.cat]||["Other"])[0]}</small></div><button class="btn sm" data-addidea="${x.i}">+ Add</button></div>`).join("")}</details>`;
+}
+
+/* ================= card ================= */
+const catOpts = v => Object.entries(CATS).map(([k,[n]])=>`<option value="${k}"${k===v?" selected":""}>${n}</option>`).join("");
+const dayOpts = v => plan.days.map((d,i)=>`<option value="${i}"${i===v?" selected":""}>${dlabel(d.date)} · ${esc(d.city)}</option>`).join("");
+function renderCard(){
+  const C=$("#card"); const e=selId&&entry(selId); if(!e){ C.hidden=true; return; }
+  const {s,d}=e; C.hidden=false;
+  const prev=seq[e.i-1], next=seq[e.i+1];
+  if(editing){
+    C.innerHTML=`<div class="when"><span style="color:${e.color}">●</span> Editing stop</div>
+    <div class="form">
+      <label class="full">Name<input id="fName" value="${esc(s.name)}"></label>
+      <label>Day<select id="fDay">${dayOpts(e.di)}</select></label>
+      <label>Time<input id="fTime" type="time" value="${esc(s.time)}"></label>
+      <label>Category<select id="fCat">${catOpts(s.cat)}</select></label>
+      <label>Booking<select id="fBook"><option value=""${s.booked==null?" selected":""}>Not needed</option><option value="no"${s.booked===false?" selected":""}>Needs booking</option><option value="yes"${s.booked===true?" selected":""}>Booked ✓</option></select></label>
+      <label class="full">Notes<textarea id="fNote">${esc(s.note)}</textarea></label>
+    </div>
+    <p style="font-size:12px;color:var(--muted)">To move the pin, drag it on the map.</p>
+    <div class="acts"><button class="btn primary sm" id="fSave">Save</button><button class="btn sm" id="fCancel">Cancel</button><span class="grow"></span><button class="btn sm danger" id="fDel">Delete</button></div>`;
+    return;
+  }
+  const tag=s.booked===false?`<span class="tag book">book ahead</span>`:s.booked?`<span class="tag ok">booked</span>`:"";
+  C.innerHTML=`<div class="when"><span style="color:${e.color}">●</span>${dlabel(d.date)} · ${esc(s.time)} · stop ${e.k+1} of ${d.stops.length}${tag}</div>
+    <h2>${esc(s.name)}</h2><div class="cat" style="color:${e.color}">${(CATS[s.cat]||["Other"])[0]}</div>
+    ${s.note?`<p>${esc(s.note)}</p>`:""}
+    <div class="acts"><a class="btn sm primary" href="${gmPlaceUrl(s,d)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+      ${prev&&prev.di===e.di?`<a class="btn sm" href="${gmDirUrl(prev.s,s)}" target="_blank" rel="noopener">Directions from #${e.k} ↗</a>`:""}
+      <button class="btn sm" id="cEdit">Edit</button></div>
+    <div class="nav"><button class="btn sm" id="cPrev" ${prev?"":"disabled"}>‹ ${prev?esc(prev.s.name.slice(0,18)):"Start"}</button><span>#${e.i+1} / ${seq.length}</span><button class="btn sm" id="cNext" ${next?"":"disabled"}>${next?esc(next.s.name.slice(0,18)):"End"} ›</button></div>`;
+}
+function go(delta){ const e=entry(selId); const n=seq[e.i+delta]; if(!n) return; if(n.di!==dayIdx&&dayIdx!==-1){ dayIdx=n.di; renderAll(); fitDay(); } select(n.s.id,{pan:true}); }
+
+/* ================= mutations ================= */
+const uid=()=>"s"+Math.random().toString(36).slice(2,9);
+function nextTime(d){ const last=d.stops[d.stops.length-1]; if(!last) return "10:00"; let m=tkey(last.time)+90; m=Math.min(m,23*60+30)%(24*60); return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); }
+function addStopAt(pos,name,extra={}){
+  if(dayIdx===-1){ toast("Pick a day first"); return; }
+  const d=plan.days[dayIdx]; const s={id:uid(),time:nextTime(d),name,cat:extra.cat||"event",lat:+pos.lat.toFixed(6),lng:+pos.lng.toFixed(6),note:extra.note||"",...(extra.placeId?{placeId:extra.placeId}:{})};
+  d.stops.push(s); save(); renderAll(); select(s.id,{pan:true}); editing=true; renderCard(); setTimeout(()=>$("#fName")&&$("#fName").select(),50);
+}
+function renderAll(){ rebuildSeq(); renderChips(); renderPanel(); renderMap(); renderCard(); setupScrub(); }
+
+/* ================= scrubber ================= */
+function setupScrub(){ const s=$("#scrub"); s.max=Math.max(seq.length-1,0); $("#ramp").style.background=rampCss; const e=selId&&entry(selId); const v=e?e.i:(seq.find(x=>x.di===dayIdx)||{i:0}).i; s.value=v; scrubLabels(v); }
+function scrubLabels(i){ const e=seq[i]; if(!e) return; $("#scrubA").textContent=dlabel(e.d.date).toUpperCase(); $("#scrubB").textContent=e.s.time+" · #"+(i+1); }
+$("#scrub").addEventListener("input",ev=>{ const e=seq[+ev.target.value]; if(!e) return; if(dayIdx!==-1&&e.di!==dayIdx){ dayIdx=e.di; renderAll(); } select(e.s.id,{pan:true}); scrubLabels(e.i); });
+
+/* ================= fitting ================= */
+function fitPoints(pts){ if(!map||!pts.length) return; if(pts.length===1){ map.panTo(pts[0]); map.setZoom(15); return; }
+  const b=new google.maps.LatLngBounds(); pts.forEach(p=>b.extend(p)); map.fitBounds(b,{top:80,right:40,bottom:window.innerWidth<820?40:200,left:40}); }
+function fitDay(){ if(dayIdx===-1) return fitTrip(); const d=plan.days[dayIdx];
+  let pts=d.stops.map(s=>({lat:s.lat,lng:s.lng})); if(pts.length>2){ const c=pts[Math.floor(pts.length/2)]; const near=pts.filter(p=>hav(p,c)<60); if(near.length>=2) pts=near; } fitPoints(pts); }
+function fitTrip(){ fitPoints(seq.map(e=>({lat:e.s.lat,lng:e.s.lng}))); }
+
+/* ================= play ================= */
+function stopPlay(){ clearInterval(playTimer); playTimer=null; $("#playBtn").classList.remove("on"); $("#playBtn").textContent=dayIdx===-1?"▶ Play trip":"▶ Play day"; }
+$("#playBtn").onclick=()=>{
+  if(playTimer){ stopPlay(); return; }
+  const list = dayIdx===-1 ? seq : seq.filter(e=>e.di===dayIdx); if(!list.length) return;
+  let i=0; $("#playBtn").classList.add("on"); $("#playBtn").textContent="■ Stop";
+  if(map&&dayIdx!==-1) map.setZoom(Math.max(map.getZoom(),14));
+  const step=()=>{ if(i>=list.length){ stopPlay(); if(dayIdx!==-1) fitDay(); return; } const e=list[i++]; select(e.s.id,{pan:true}); };
+  step(); playTimer=setInterval(step, dayIdx===-1?900:1800);
+};
+
+/* ================= search (Places API New) ================= */
+let searchT=null;
+$("#addBtn").onclick=()=>{ if(dayIdx===-1){ toast("Pick a day first"); return; } $("#searchBox").hidden=false; $("#searchIn").focus(); };
+$("#searchClose").onclick=()=>{ $("#searchBox").hidden=true; $("#results").innerHTML=""; };
+$("#searchIn").addEventListener("input",()=>{ clearTimeout(searchT); searchT=setTimeout(doSearch,450); });
+$("#searchIn").addEventListener("keydown",e=>{ if(e.key==="Enter"){ clearTimeout(searchT); doSearch(); } if(e.key==="Escape") $("#searchClose").click(); });
+function guessCat(types=[]){ const t=types.join(" ");
+  if(/casino/.test(t)) return "gamble"; if(/amusement_park|theme_park|water_park/.test(t)) return "theme"; if(/museum|art_gallery/.test(t)) return "museum";
+  if(/bar|night_club|pub/.test(t)) return "night"; if(/restaurant|food|cafe|market|bakery/.test(t)) return "food";
+  if(/place_of_worship|shinto|temple|shrine|church/.test(t)) return "temple"; if(/movie_theater|stadium|event/.test(t)) return "event";
+  if(/lodging|hotel/.test(t)) return "stay"; if(/station|transit|airport/.test(t)) return "transit"; if(/video_arcade|electronics|game/.test(t)) return "gaming"; return "event"; }
+let lastResults=[];
+async function doSearch(){
+  const q=$("#searchIn").value.trim(); const R=$("#results"); if(q.length<2){ R.innerHTML=""; return; }
+  if(!map){ R.innerHTML=`<div class="res"><small>Map not loaded.</small></div>`; return; }
+  R.innerHTML=`<div class="res"><small>Searching…</small></div>`;
+  try{
+    const {Place}=await google.maps.importLibrary("places");
+    const d=plan.days[dayIdx]; const c=d.stops[0]||{lat:map.getCenter().lat(),lng:map.getCenter().lng()};
+    const {places}=await Place.searchByText({textQuery:q,fields:["id","displayName","formattedAddress","location","types"],maxResultCount:8,
+      locationBias:{center:{lat:c.lat,lng:c.lng},radius:30000}});
+    lastResults=places||[];
+    R.innerHTML=lastResults.length? lastResults.map((p,i)=>`<button class="res" data-res="${i}"><b>${esc(p.displayName)}</b><small>${esc(p.formattedAddress||"")}</small></button>`).join("") : `<div class="res"><small>No places found.</small></div>`;
+  }catch(e){ R.innerHTML=`<div class="res"><small>Search failed. Is “Places API (New)” enabled for this key?</small></div>`; }
+}
+$("#results").addEventListener("click",e=>{ const b=e.target.closest("[data-res]"); if(!b) return; const p=lastResults[+b.dataset.res];
+  const loc=p.location; addStopAt({lat:loc.lat(),lng:loc.lng()},p.displayName,{cat:guessCat(p.types),placeId:p.id,note:p.formattedAddress||""}); $("#searchClose").click(); });
+
+/* ================= drop mode ================= */
+function setDrop(on){ dropMode=on; document.body.classList.toggle("dropmode",on); $("#dropHint").hidden=!on; $("#dropBtn").classList.toggle("on",on); }
+$("#dropBtn").onclick=()=>{ if(dayIdx===-1){ toast("Pick a day first"); return; } setDrop(!dropMode); };
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(dropMode) setDrop(false); else if(editing){ editing=false; renderCard(); } else if(selId) select(null); }
+  if(!editing && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ if(e.key==="ArrowRight"&&selId) go(1); if(e.key==="ArrowLeft"&&selId) go(-1); } });
+
+/* ================= events ================= */
+$("#chips").addEventListener("click",e=>{ const b=e.target.closest("[data-day]"); if(!b) return; stopPlay(); dayIdx=+b.dataset.day; selId=null; renderAll(); fitDay(); });
+$("#list").addEventListener("click",e=>{
+  const ai=e.target.closest("[data-addidea]"); if(ai){ const x=plan.ideas[+ai.dataset.addidea]; plan.ideas.splice(+ai.dataset.addidea,1); addStopAt({lat:x.lat,lng:x.lng},x.name,{cat:x.cat,note:x.note}); return; }
+  const r=e.target.closest(".row"); if(!r) return;
+  if(r.dataset.day!=null&&r.dataset.id==null){ dayIdx=+r.dataset.day; selId=null; renderAll(); fitDay(); return; }
+  select(r.dataset.id,{pan:true,zoom:14});
+});
+$("#list").addEventListener("mouseover",e=>{ const r=e.target.closest(".row[data-id]"); if(r) hover(r.dataset.id,true); });
+$("#list").addEventListener("mouseout",e=>{ const r=e.target.closest(".row[data-id]"); if(r) hover(r.dataset.id,false); });
+$("#dayhead").addEventListener("input",e=>{ if(e.target.id==="dayTitle"){ plan.days[dayIdx].title=e.target.value; save(); } if(e.target.id==="tripTitle"){ plan.trip=e.target.value; save(); } });
+$("#dayhead").addEventListener("click",e=>{ if(e.target.id==="editDayNote"){ const d=plan.days[dayIdx];
+  $("#dayhead").querySelector(".acts").insertAdjacentHTML("beforebegin",`<div class="form"><label class="full">Day note<textarea id="dayNoteIn">${esc(d.note||"")}</textarea></label><div class="full" style="display:flex;gap:6px"><button class="btn sm primary" id="dayNoteSave">Save note</button></div></div>`); e.target.remove(); }
+  if(e.target.id==="dayNoteSave"){ plan.days[dayIdx].note=$("#dayNoteIn").value.trim(); save(); renderPanel(); } });
+$("#card").addEventListener("click",e=>{
+  const id=e.target.id;
+  if(id==="cPrev") go(-1); if(id==="cNext") go(1);
+  if(id==="cEdit"){ editing=true; renderCard(); }
+  if(id==="fCancel"){ editing=false; renderCard(); }
+  if(id==="fDel"){ const en=entry(selId); plan.days[en.di].stops=plan.days[en.di].stops.filter(x=>x.id!==selId); save(); toast("Deleted "+en.s.name); selId=null; renderAll(); }
+  if(id==="fSave"){ const en=entry(selId); const s=en.s;
+    s.name=$("#fName").value.trim()||s.name; s.time=$("#fTime").value||s.time; s.cat=$("#fCat").value; s.note=$("#fNote").value.trim();
+    const bk=$("#fBook").value; if(bk==="") delete s.booked; else s.booked=bk==="yes";
+    const to=+$("#fDay").value; if(to!==en.di){ plan.days[en.di].stops=plan.days[en.di].stops.filter(x=>x.id!==s.id); plan.days[to].stops.push(s); dayIdx=to; }
+    save(); editing=false; renderAll(); select(s.id,{pan:true}); toast("Saved"); }
+});
+$("#fitDay").onclick=fitDay; $("#fitTrip").onclick=()=>{ fitTrip(); };
+
+/* menu */
+$("#menuBtn").onclick=e=>{ e.stopPropagation(); $("#menu").hidden=!$("#menu").hidden; $("#mIdeas").textContent=showIdeas?"Hide ideas on the map":"Show ideas on the map"; };
+document.addEventListener("click",e=>{ if(!e.target.closest("#menu")&&!e.target.closest("#menuBtn")) $("#menu").hidden=true; });
+function download(name,text,type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); }
+$("#mExport").onclick=()=>download("japan-plan.json",JSON.stringify(plan,null,2),"application/json");
+$("#mImport").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const p=JSON.parse(await f.text()); if(!Array.isArray(p.days)) throw 0; p.ideas=p.ideas||[]; plan=p; save(); dayIdx=0; selId=null; renderAll(); fitDay(); toast("Plan imported"); }catch(_){ toast("That file isn't a plan export"); } e.target.value=""; };
+$("#mReset").onclick=()=>{ if($("#mReset").dataset.armed){ plan=clone(SEED); save(); dayIdx=0; selId=null; renderAll(); fitDay(); toast("Reset to the original plan"); delete $("#mReset").dataset.armed; $("#mReset").textContent="Reset to the original plan"; }
+  else { $("#mReset").dataset.armed="1"; $("#mReset").textContent="Click again to confirm reset"; } };
+$("#mKey").onclick=()=>showSetup();
+$("#mIdeas").onclick=()=>{ showIdeas=!showIdeas; renderMap(); $("#menu").hidden=true; };
+function showIdea(i){ const x=plan.ideas[i]; const C=$("#card"); C.hidden=false; selId=null; applySel();
+  C.innerHTML=`<div class="when">Idea · not scheduled</div><h2>${esc(x.name)}</h2><div class="cat">${(CATS[x.cat]||["Other"])[0]}</div>${x.note?`<p>${esc(x.note)}</p>`:""}
+  <div class="acts"><a class="btn sm" href="${gmPlaceUrl(x)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>${dayIdx>=0?`<button class="btn sm primary" id="ideaAdd" data-i="${i}">Add to ${dlabel(plan.days[dayIdx].date)}</button>`:""}</div>`;
+  const b=$("#ideaAdd"); if(b) b.onclick=()=>{ plan.ideas.splice(i,1); addStopAt({lat:x.lat,lng:x.lng},x.name,{cat:x.cat,note:x.note}); };
+}
+$("#mKml").onclick=()=>{
+  const x=s=>esc(s); const icon={anime:"pink-circle",gaming:"ltblu-circle",theme:"grn-circle",night:"purple-circle",food:"orange-circle",gamble:"ylw-stars",museum:"blu-circle",temple:"red-circle",event:"ylw-circle",transit:"wht-circle",stay:"wht-blank"};
+  const out=['<?xml version="1.0" encoding="UTF-8"?>','<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+x(plan.trip||"Japan trip")+'</name>'];
+  Object.entries(icon).forEach(([k,v])=>out.push(`<Style id="${k}"><IconStyle><Icon><href>http://maps.google.com/mapfiles/kml/paddle/${v}.png</href></Icon></IconStyle></Style>`));
+  let cur=null; const groups=[]; plan.days.forEach((d,i)=>{ if(!cur||cur.city!==d.city||cur.days.length>=4){ cur={city:d.city,days:[]}; groups.push(cur);} cur.days.push(d); });
+  groups.forEach(g=>{ out.push(`<Folder><name>${x(g.city+" · "+dlabel(g.days[0].date)+" – "+dlabel(g.days[g.days.length-1].date))}</name>`);
+    g.days.forEach(d=>d.stops.forEach(s=>out.push(`<Placemark><name>${x(dlabel(d.date)+" "+s.time+" · "+s.name)}</name><description>${x(s.note||"")}</description><styleUrl>#${s.cat}</styleUrl><Point><coordinates>${s.lng},${s.lat},0</coordinates></Point></Placemark>`)));
+    out.push("</Folder>"); });
+  out.push("</Document></kml>"); download("japan-trip.kml",out.join("\n"),"application/vnd.google-earth.kml+xml");
+};
+
+/* ================= boot ================= */
+(async()=>{
+  SEED = await loadSeed();
+  plan = storedPlan() || clone(SEED);
+  rebuildSeq(); renderChips(); renderPanel(); setupScrub();
+  initMap();
+})();
+})();
+</script>
+</body>
+</html>
