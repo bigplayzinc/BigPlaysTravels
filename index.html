@@ -122,6 +122,12 @@ details.ideas summary{cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:
 .icat b{color:var(--faint);font-weight:600;margin-left:4px}
 .icat.on{border-color:var(--amber);color:var(--amber)} .icat.on b{color:var(--amber)}
 .icat.map.on{border-color:var(--cyan);color:var(--cyan)}
+.rstar{color:var(--amber);font-weight:600}
+.award{color:#FF6B6B;font-weight:600}
+.tag.award{color:#FF6B6B;border:1px solid rgba(255,107,107,.5)}
+.rspin{width:16px;height:16px;border-radius:50%;border:2px solid var(--amber);background:rgba(255,181,71,.25);transform:translateY(8px);cursor:pointer}
+.chip.rest .dn{font-size:13px;margin-top:4px}
+.acts select{background:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:6px 8px;font:500 12px/1.2 var(--body);color:var(--text);max-width:100%}
 .idea{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;border:1px solid transparent;cursor:pointer}
 .idea:hover{background:var(--panel2)}
 .idea.sel{background:#1B2044;border-color:var(--amber)}
@@ -340,11 +346,11 @@ details.help summary{cursor:pointer;color:var(--cyan)}
 "use strict";
 /* ================= data ================= */
 const CATS = {
-  anime:["Anime"], gaming:["Gaming"], theme:["Theme park"], night:["Nightlife"], food:["Food & markets"], gamble:["Gambling"],
+  anime:["Anime"], gaming:["Gaming"], theme:["Theme park"], night:["Nightlife"], food:["Food & markets"], dine:["Restaurant & bar"], gamble:["Gambling"],
   museum:["Museum"], temple:["Temple & shrine"], wild:["Wildlife"], craft:["Workshop"], music:["Music"], event:["Event"], transit:["Transit"], stay:["Stay"]
 };
 const CITY = {Tokyo:["東京","#FF3D8B"],Osaka:["大阪","#FFB547"],Kyoto:["京都","#4DF0A8"],Hakuba:["白馬","#37E2FF"]};
-const LS = {hours:"njr-hours", plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1", gh:"njr-gh", sync:"njr-sync", api:"njr-gh-api", split:"njr-split", cardMin:"njr-cardmin", ideaCat:"njr-ideacat"};
+const LS = {hours:"njr-hours", plan:"njr-plan-v1", key:"njr-key", mapId:"njr-mapid", routes:"njr-routes-v1", gh:"njr-gh", sync:"njr-sync", api:"njr-gh-api", split:"njr-split", cardMin:"njr-cardmin", ideaCat:"njr-ideacat", restCui:"njr-restcui", restCity:"njr-restcity"};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = { get(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }, del(k){ try{ localStorage.removeItem(k); }catch(_){} } };
@@ -704,7 +710,9 @@ function renderIdeaMarkers(){
   const add=(x,cls,label)=>{ const el=document.createElement("div"); el.className=x===idea?"idpin sel":cls; el.title=label+x.name;
     const m=new AME({map,position:{lat:x.lat,lng:x.lng},content:el,title:x.name,zIndex:x===idea?1500:1});
     m.addListener("click",()=>showIdea(x,{pan:false})); ideaMarkers.push(m); };
-  plan.ideas.forEach(x=>{ if((showIdeas&&ideaShown(x))||x===idea) add(x,"idpin","Idea: "); });
+  plan.ideas.forEach(x=>{
+    if(isDine(x)){ if((restView&&restShown(x))||x===idea) add(x,"rspin",""); return; }
+    if((showIdeas&&ideaShown(x))||x===idea) add(x,"idpin","Idea: "); });
   plan.days.forEach((d,i)=>d.maybe.forEach(x=>{ if(i===dayIdx||x===idea) add(x,"mbpin","Maybe: "); }));
 }
 function clearMap(){ markers.forEach(m=>m.map=null); markers.clear(); lines.forEach(l=>l.setMap(null)); lines=[]; ideaMarkers.forEach(m=>m.map=null); ideaMarkers=[]; }
@@ -765,9 +773,10 @@ function hover(id,on){ const m=markers.get(id); if(m&&m.content) m.content.class
 
 /* ================= panel ================= */
 function renderChips(){
-  let h=`<button class="chip all" aria-pressed="${dayIdx===-1}" data-day="-1"><div class="dw">TRIP</div><div class="dn">All</div><div class="bar" style="background:${rampCss}"></div></button>`;
+  let h=`<button class="chip all" aria-pressed="${dayIdx===-1&&!restView}" data-day="-1"><div class="dw">TRIP</div><div class="dn">All</div><div class="bar" style="background:${rampCss}"></div></button>`
+    +`<button class="chip rest" aria-pressed="${restView}" data-day="rest"><div class="dw">EAT</div><div class="dn">Food &amp; bars</div><div class="bar" style="background:var(--amber)"></div></button>`;
   plan.days.forEach((d,i)=>{ const o=dateObj(d.date); const f=seq.find(e=>e.di===i); const c=CITY[d.city]||["","#aaa"];
-    h+=`<button class="chip" aria-pressed="${i===dayIdx}" data-day="${i}" title="${esc(d.title)}"><div class="dw">${DOW[o.getDay()].toUpperCase()} <span style="color:${c[1]}">${c[0]}</span></div><div class="dn">${o.getDate()} ${MON[o.getMonth()]}</div><div class="bar" style="background:${f?f.color:"var(--line)"}"></div></button>`; });
+    h+=`<button class="chip" aria-pressed="${i===dayIdx&&!restView}" data-day="${i}" title="${esc(d.title)}"><div class="dw">${DOW[o.getDay()].toUpperCase()} <span style="color:${c[1]}">${c[0]}</span></div><div class="dn">${o.getDate()} ${MON[o.getMonth()]}</div><div class="bar" style="background:${f?f.color:"var(--line)"}"></div></button>`; });
   $("#chips").innerHTML=h; const s=$("#chips").querySelector('[aria-pressed="true"]'); s&&s.scrollIntoView({block:"nearest",inline:"center"});
   const f=plan.days[0], l=plan.days[plan.days.length-1]; $("#sub").textContent=f?dlabel(f.date)+" → "+dlabel(l.date)+" · "+seq.length+" stops":"";
 }
@@ -784,6 +793,7 @@ function legHtml(a,b,r){
 function renderPanel(){
   const DH=$("#dayhead"), L=$("#list");
   if(!plan.days.length){ DH.innerHTML=`<p class="note">${esc(emptyMsg)}</p>`; L.innerHTML=""; return; }
+  if(restView) return renderRestPanel();
   if(dayIdx===-1){
     DH.innerHTML=`<div class="meta"><span>Whole trip</span></div><input value="${esc(plan.trip||"Japan trip")}" id="tripTitle" aria-label="Trip name"><p class="note">Colour runs from the first stop (cyan) to the last (amber). Pick a day to see its route.</p>`;
     L.innerHTML=plan.days.map((d,i)=>{ const f=seq.find(e=>e.di===i); const c=CITY[d.city]||["","#aaa"];
@@ -813,17 +823,49 @@ function renderPanel(){
 // Category filter for the ideas list (and their map pins); remembered per device.
 let ideaCat = store.get(LS.ideaCat)||"";
 const ideaShown = x => !ideaCat||x.cat===ideaCat;
+const isDine = x => x.cat==="dine";
 function ideasHtml(){
-  if(!plan.ideas.length) return "";
+  const total=plan.ideas.filter(x=>!isDine(x)).length; if(!total) return "";
   const d=plan.days[dayIdx]; const ctr=d.stops[0]||{lat:35.68,lng:139.76};
-  const counts={}; plan.ideas.forEach(x=>{ counts[x.cat]=(counts[x.cat]||0)+1; });
+  const counts={}; plan.ideas.forEach(x=>{ if(!isDine(x)) counts[x.cat]=(counts[x.cat]||0)+1; });
   if(ideaCat&&!counts[ideaCat]) ideaCat="";
-  const chips=`<div class="icats"><button class="icat${ideaCat?"":" on"}" data-icat="">All<b>${plan.ideas.length}</b></button>`
+  const chips=`<div class="icats"><button class="icat${ideaCat?"":" on"}" data-icat="">All<b>${total}</b></button>`
     +Object.keys(CATS).filter(k=>counts[k]).map(k=>`<button class="icat${k===ideaCat?" on":""}" data-icat="${k}">${CATS[k][0]}<b>${counts[k]}</b></button>`).join("")
     +`<button class="icat map${showIdeas?" on":""}" data-imap="1" title="Show these ideas as pins on the map">◎ On map</button></div>`;
-  const list=plan.ideas.map((x,i)=>({...x,i,km:hav(ctr,x)})).filter(ideaShown).sort((a,b)=>a.km-b.km);
-  return `<details class="ideas"${ideasOpen?" open":""}><summary>Ideas not scheduled (${ideaCat?`${list.length} ${esc(CATS[ideaCat][0])} of `:""}${plan.ideas.length})</summary>${chips}${list.map(x=>`<div class="idea${plan.ideas[x.i]===idea?" sel":""}" data-idea="${x.i}"><div class="it"><b>${esc(x.name)}</b><small>${fmtKm(x.km)} · ${(CATS[x.cat]||["Other"])[0]}</small>${x.note?`<small class="inote">${esc(x.note)}</small>`:""}</div><span class="tm" style="color:var(--muted)">›</span></div>`).join("")}</details>`;
+  const list=plan.ideas.map((x,i)=>({...x,i,km:hav(ctr,x)})).filter(x=>!isDine(x)&&ideaShown(x)).sort((a,b)=>a.km-b.km);
+  return `<details class="ideas"${ideasOpen?" open":""}><summary>Ideas not scheduled (${ideaCat?`${list.length} ${esc(CATS[ideaCat][0])} of `:""}${total})</summary>${chips}${list.map(x=>`<div class="idea${plan.ideas[x.i]===idea?" sel":""}" data-idea="${x.i}"><div class="it"><b>${esc(x.name)}</b><small>${fmtKm(x.km)} · ${(CATS[x.cat]||["Other"])[0]}</small>${x.note?`<small class="inote">${esc(x.note)}</small>`:""}</div><span class="tm" style="color:var(--muted)">›</span></div>`).join("")}</details>`;
 }
+// Restaurants & bars: ideas with cat "dine" in one general list, opened from the chip next to "All".
+// Schedule one on any day from its card; move it between days later from the stop's edit form.
+// The rating shown is Google's live one once looked up on this device, else the researched one stored in the plan.
+let restView=false, restCui=store.get(LS.restCui)||"", restCity=store.get(LS.restCity)||"";
+const cuisineOf = x => x.cuisine||"Other", cityOf = x => x.city||"Other";
+const restShown = x => (!restCity||cityOf(x)===restCity)&&(!restCui||cuisineOf(x)===restCui);
+function ratingOf(x){ const h=hoursOf(x); if(h&&h.v===2&&h.r) return {r:h.r,n:h.n,live:true}; return x.rating?{r:+x.rating,n:x.reviews,live:false}:null; }
+const starsText = q => q?`★${q.r.toFixed(1)}${q.n?` (${Number(q.n).toLocaleString("en")})`:""}`:"";
+function restChips(key,cur,counts,total){
+  return `<div class="icats"><button class="icat${cur?"":" on"}" data-${key}="">All<b>${total}</b></button>`
+    +Object.keys(counts).sort((a,b)=>counts[b]-counts[a]||a.localeCompare(b)).map(c=>`<button class="icat${c===cur?" on":""}" data-${key}="${esc(c)}">${esc(c)}<b>${counts[c]}</b></button>`).join("")+`</div>`;
+}
+function renderRestPanel(){
+  const all=plan.ideas.map((x,i)=>({x,i})).filter(o=>isDine(o.x)), cities={}, cuis={};
+  all.forEach(o=>{ cities[cityOf(o.x)]=(cities[cityOf(o.x)]||0)+1; });
+  if(restCity&&!cities[restCity]) restCity="";
+  const inCity=all.filter(o=>!restCity||cityOf(o.x)===restCity);
+  inCity.forEach(o=>{ cuis[cuisineOf(o.x)]=(cuis[cuisineOf(o.x)]||0)+1; });
+  if(restCui&&!cuis[restCui]) restCui="";
+  const list=inCity.filter(o=>restShown(o.x)).map(o=>({...o,q:ratingOf(o.x)}))
+    .sort((a,b)=>((b.q&&b.q.r)||0)-((a.q&&a.q.r)||0)||((b.q&&b.q.n)||0)-((a.q&&a.q.n)||0));
+  $("#dayhead").innerHTML=`<div class="meta"><span class="city" style="background:rgba(255,181,71,.13);color:var(--amber)">EAT &amp; DRINK</span><span>${list.length} of ${all.length}</span></div>
+    <p class="note">Not tied to a day: tap one, then schedule it or add it to Maybe on any day. Best rated first.</p>`;
+  $("#list").innerHTML=!all.length?`<p class="note" style="padding:8px">No restaurants or bars yet.</p>`
+    :restChips("rcity",restCity,cities,all.length)+restChips("rcui",restCui,cuis,inCity.length)
+    +list.map(o=>{ const x=o.x;
+      return `<div class="idea${x===idea?" sel":""}" data-idea="${o.i}"><div class="it"><b>${esc(x.name)}${x.award?`<span class="tag award">${esc(x.award)}</span>`:""}</b><small><span class="rstar">${starsText(o.q)}</span> · ${esc(cuisineOf(x))} · ${esc(x.area||cityOf(x))}${x.price?` · ${esc(x.price)}`:""}${me?` · ${fmtKm(hav(me,x))}`:""}</small>${x.note?`<small class="inote">${esc(x.note)}</small>`:""}</div><span class="tm" style="color:var(--muted)">›</span></div>`; }).join("");
+}
+function fitRest(){ const pts=plan.ideas.filter(x=>isDine(x)&&restShown(x)).map(x=>({lat:x.lat,lng:x.lng})); if(pts.length) fitPoints(pts); }
+// Default day for scheduling an idea: the day being viewed, else the day with stops nearest to it.
+function nearestDay(x){ let best=0,bd=Infinity; plan.days.forEach((d,i)=>d.stops.forEach(s=>{ const k=hav(s,x); if(k<bd){ bd=k; best=i; } })); return best; }
 // Maybe: things parked on this day without a time. Tap one to schedule it, send it to Ideas, or edit it.
 function maybeHtml(d){
   if(!d.maybe.length) return "";
@@ -849,18 +891,20 @@ function packHours(oh){
   return {p:oh.periods.map(q=>{ const o=q.open.day*1440+q.open.hour*60+q.open.minute; if(!q.close) return [0,WEEK];
     let c=q.close.day*1440+q.close.hour*60+q.close.minute; if(c<=o) c+=WEEK; return [o,c]; })};
 }
-function ensureHours(x){   // cached hours, looked up on Google once per place
+// One Places lookup per place brings opening hours plus the Google rating and review count (v:2 entries).
+const packPlace = pl => ({...packHours(pl&&pl.regularOpeningHours), r:pl&&pl.rating||null, n:pl&&pl.userRatingCount||null, v:2});
+function ensureHours(x,opt={}){   // cached place info, looked up on Google once per place
   if(!needsHours(x)) return Promise.resolve(null);
-  const k=hoursKey(x); if(hoursCache[k]) return Promise.resolve(hoursCache[k]);
+  const k=hoursKey(x), c=hoursCache[k]; if(c&&(c.v===2||!opt.rating)) return Promise.resolve(c);
   if(!map||hoursFailed.has(k)) return Promise.resolve(null);
   if(!hoursBusy.has(k)) hoursBusy.set(k,(async()=>{
     try{
       const {Place}=await google.maps.importLibrary("places"); let pl=null;
-      if(x.placeId){ pl=new Place({id:x.placeId}); await pl.fetchFields({fields:["regularOpeningHours"]}); }
-      else{ const {places}=await Place.searchByText({textQuery:x.q||x.name.split("·")[0].trim(),fields:["id","location","regularOpeningHours"],
+      if(x.placeId){ pl=new Place({id:x.placeId}); await pl.fetchFields({fields:["regularOpeningHours","rating","userRatingCount"]}); }
+      else{ const {places}=await Place.searchByText({textQuery:x.q||x.name.split("·")[0].trim(),fields:["id","location","regularOpeningHours","rating","userRatingCount"],
           locationBias:{center:{lat:x.lat,lng:x.lng},radius:500},maxResultCount:5});
         pl=(places||[]).map(q=>({q,km:hav(x,{lat:q.location.lat(),lng:q.location.lng()})})).filter(z=>z.km<1).sort((a,b)=>a.km-b.km).map(z=>z.q)[0]||null; }
-      hoursCache[k]=packHours(pl&&pl.regularOpeningHours); store.set(LS.hours,JSON.stringify(hoursCache)); return hoursCache[k];
+      hoursCache[k]=packPlace(pl); store.set(LS.hours,JSON.stringify(hoursCache)); return hoursCache[k];
     }catch(_){ hoursFailed.add(k); return null; }
     finally{ hoursBusy.delete(k); } })());
   return hoursBusy.get(k);
@@ -894,6 +938,15 @@ function suggestTime(x,d,want,skipId){
   r.forEach(([a,b])=>{ for(let m=Math.ceil(a/30)*30; m<=Math.max(a,b-60); m+=30) c.push(m); });
   const free=c.filter(m=>taken.every(t=>Math.abs(t-m)>=45)), pool=free.length?free:c;
   return pool.length?hm(pool.reduce((p,m)=>Math.abs(m-w)<Math.abs(p-w)?m:p)):null;
+}
+// Rating line for cards: Google's live rating once looked up (older hours-only lookups refresh once), else the researched one.
+function ratingView(x){
+  if(!needsHours(x)) return "";
+  const h=hoursOf(x);
+  if(map&&!(h&&h.v===2)&&!hoursFailed.has(hoursKey(x))) ensureHours(x,{rating:true}).then(r=>{ if(!r||!r.r) return;
+    if(!editing&&(idea===x||(selId&&entry(selId)&&entry(selId).s===x))) renderCard(); if(!typing()) renderPanel(); });
+  const q=ratingOf(x); if(!q) return "";
+  return `<div class="hrs"><span class="rstar">${starsText(q)}</span><span style="color:var(--muted)">${q.live?"on Google":"Google rating when researched"}${x.price?` · ${esc(x.price)}`:""}</span></div>`;
 }
 // One line for the cards; looks the hours up in the background the first time.
 function hoursView(x,date,time){
@@ -971,8 +1024,8 @@ function renderCard(){
   }
   const tag=s.booked===false?`<span class="tag book">book ahead</span>`:s.booked?`<span class="tag ok">booked</span>`:"";
   C.innerHTML=`${cardCtl(true)}<div class="when"><span style="color:${e.color}">●</span>${dlabel(d.date)} · ${esc(s.time)} · stop ${e.k+1} of ${d.stops.length}${tag}</div>
-    <h2>${esc(s.name)}</h2><div class="cat" style="color:${e.color}">${(CATS[s.cat]||["Other"])[0]}${me?` · <span style="color:var(--muted)">${fmtKm(hav(me,s))} from you</span>`:""}</div>
-    ${hoursView(s,d.date,s.time)}
+    <h2>${esc(s.name)}</h2><div class="cat" style="color:${e.color}">${(CATS[s.cat]||["Other"])[0]}${s.cuisine?` · ${esc(s.cuisine)}`:""}${s.award?` · <span class="award">${esc(s.award)}</span>`:""}${me?` · <span style="color:var(--muted)">${fmtKm(hav(me,s))} from you</span>`:""}</div>
+    ${ratingView(s)}${hoursView(s,d.date,s.time)}
     ${s.note?`<p>${esc(s.note)}</p>`:""}
     <div class="acts"><a class="btn sm primary" href="${gmPlaceUrl(s,d)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>
       <a class="btn sm" href="${gmHereUrl(s)}" target="_blank" rel="noopener">Directions from here ↗</a>
@@ -1018,7 +1071,7 @@ $("#playBtn").onclick=()=>{
 
 /* ================= search (Places API New) ================= */
 let searchT=null;
-$("#addBtn").onclick=()=>{ if(dayIdx===-1){ toast("Pick a day first"); return; } $("#searchBox").hidden=false; $("#searchIn").focus(); };
+$("#addBtn").onclick=()=>{ if(dayIdx===-1||restView){ toast("Pick a day first"); return; } $("#searchBox").hidden=false; $("#searchIn").focus(); };
 $("#searchClose").onclick=()=>{ $("#searchBox").hidden=true; $("#results").innerHTML=""; };
 $("#searchIn").addEventListener("input",()=>{ clearTimeout(searchT); searchT=setTimeout(doSearch,450); });
 $("#searchIn").addEventListener("keydown",e=>{ if(e.key==="Enter"){ clearTimeout(searchT); doSearch(); } if(e.key==="Escape") $("#searchClose").click(); });
@@ -1046,13 +1099,18 @@ $("#results").addEventListener("click",e=>{ const b=e.target.closest("[data-res]
 
 /* ================= drop mode ================= */
 function setDrop(on){ dropMode=on; document.body.classList.toggle("dropmode",on); $("#dropHint").hidden=!on; $("#dropBtn").classList.toggle("on",on); }
-$("#dropBtn").onclick=()=>{ if(dayIdx===-1){ toast("Pick a day first"); return; } setDrop(!dropMode); };
+$("#dropBtn").onclick=()=>{ if(dayIdx===-1||restView){ toast("Pick a day first"); return; } setDrop(!dropMode); };
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(dropMode) setDrop(false); else if(editing){ editing=false; renderCard(); } else if(selId||idea) select(null); }
   if(!editing && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ if(e.key==="ArrowRight"&&selId) go(1); if(e.key==="ArrowLeft"&&selId) go(-1); } });
 
 /* ================= events ================= */
-$("#chips").addEventListener("click",e=>{ const b=e.target.closest("[data-day]"); if(!b) return; stopPlay(); dayIdx=+b.dataset.day; selId=null; renderAll(); fitDay(); });
+$("#chips").addEventListener("click",e=>{ const b=e.target.closest("[data-day]"); if(!b) return; stopPlay();
+  if(b.dataset.day==="rest"){ restView=true; selId=null; idea=null; editing=false; renderAll(); fitRest(); return; }
+  restView=false; dayIdx=+b.dataset.day; selId=null; renderAll(); fitDay(); });
 $("#list").addEventListener("click",e=>{
+  const rc=e.target.closest("[data-rcity],[data-rcui]");
+  if(rc){ if(rc.dataset.rcity!=null){ restCity=rc.dataset.rcity; restCui=""; store.set(LS.restCity,restCity); } else restCui=rc.dataset.rcui;
+    store.set(LS.restCui,restCui); renderPanel(); renderIdeaMarkers(); fitRest(); return; }
   const ic=e.target.closest("[data-icat]"); if(ic){ ideaCat=ic.dataset.icat; store.set(LS.ideaCat,ideaCat); renderPanel(); renderIdeaMarkers(); return; }
   if(e.target.closest("[data-imap]")){ showIdeas=!showIdeas; renderPanel(); renderIdeaMarkers();
     if(showIdeas&&map){ const pts=plan.ideas.filter(ideaShown).map(x=>({lat:x.lat,lng:x.lng})); if(pts.length) fitPoints(pts); } return; }
@@ -1096,7 +1154,8 @@ $("#card").addEventListener("click",e=>{
     if(dy>40&&!cardMin&&(selId||idea)) setCardMin(true); else if(dy<-30&&cardMin) setCardMin(false); });
   $("#card").addEventListener("pointercancel",()=>{ y0=null; });
 })();
-$("#card").addEventListener("input",e=>{ if(e.target.id==="fTime"||e.target.id==="fDay") updateFormHours(); });
+$("#card").addEventListener("input",e=>{ if(e.target.id==="fTime"||e.target.id==="fDay") updateFormHours();
+  if(e.target.id==="iDay"&&idea){ const h=$("#iHrs"); if(h) h.innerHTML=hoursView(idea,plan.days[+e.target.value].date,null); } });
 $("#fitDay").onclick=fitDay; $("#fitTrip").onclick=()=>{ fitTrip(); };
 
 /* menu */
@@ -1130,7 +1189,8 @@ function looseHome(x){
 }
 function renderIdeaCard(){
   const C=$("#card"), x=idea, home=looseHome(x); if(!home){ idea=null; C.hidden=true; return; }
-  const maybe=home.kind==="maybe", cat=(CATS[x.cat]||["Other"])[0], day=maybe?plan.days[home.di]:(dayIdx>=0&&plan.days[dayIdx]);
+  const maybe=home.kind==="maybe", cat=(CATS[x.cat]||["Other"])[0]+(x.cuisine?` · ${x.cuisine}`:"");
+  const di=maybe?home.di:(dayIdx>=0&&!restView?dayIdx:nearestDay(x)), day=plan.days[di];
   const col=maybe?"var(--cyan)":"var(--amber)", mark=`<span style="color:${col}">${maybe?"◇":"◆"}</span>`;
   C.hidden=false; C.classList.toggle("min",cardMin&&!editing);
   if(cardMin&&!editing){
@@ -1148,13 +1208,12 @@ function renderIdeaCard(){
     return;
   }
   C.innerHTML=`${cardCtl(true)}<div class="when">${mark}${maybe?`Maybe · ${dlabel(day.date)}`:"Idea · not scheduled"}${me?` · ${fmtKm(hav(me,x))} from you`:""}</div>
-    <h2>${esc(x.name)}</h2><div class="cat" style="color:${col}">${cat}</div>
-    ${day?hoursView(x,day.date,null):""}
+    <h2>${esc(x.name)}</h2><div class="cat" style="color:${col}">${esc(cat)}${x.award?` · <span class="award">${esc(x.award)}</span>`:""}</div>
+    ${ratingView(x)}<div id="iHrs">${day?hoursView(x,day.date,null):""}</div>
     ${x.note?`<p class="inote">${esc(x.note)}</p>`:`<p style="color:var(--muted)">No notes yet. Tap Edit to add some.</p>`}
-    <div class="acts">${day?`<button class="btn sm primary" id="iAdd">+ Schedule on ${dlabel(day.date)}</button>`:""}
-      <a class="btn sm" href="${gmPlaceUrl(x)}" target="_blank" rel="noopener">Google Maps ↗</a>
-      <a class="btn sm" href="${gmHereUrl(x)}" target="_blank" rel="noopener">Directions from here ↗</a></div>
-    <div class="acts2"><button class="btn sm" id="iEdit">Edit</button>${maybe?`<button class="btn sm" id="iToIdeas">→ Ideas</button>`:day?`<button class="btn sm" id="iMaybe">→ Maybe on ${dlabel(day.date)}</button>`:""}</div>`;
+    <div class="acts"><select id="iDay" aria-label="Day">${dayOpts(di)}</select><button class="btn sm primary" id="iAdd">+ Schedule</button><button class="btn sm" id="iMaybe">${maybe?"Move to day":"→ Maybe"}</button></div>
+    <div class="acts2"><a class="btn sm" href="${gmPlaceUrl(x)}" target="_blank" rel="noopener">Google Maps ↗</a><a class="btn sm" href="${gmHereUrl(x)}" target="_blank" rel="noopener">Directions from here ↗</a>
+      <button class="btn sm" id="iEdit">Edit</button>${maybe?`<button class="btn sm" id="iToIdeas">→ Ideas</button>`:""}</div>`;
 }
 function ideaAction(id){
   const x=idea, home=looseHome(x); if(!home) return;
@@ -1165,13 +1224,14 @@ function ideaAction(id){
     editing=false; save(); renderPanel(); renderIdeaMarkers(); renderCard(); toast("Idea saved"); }
   if(id==="iDel"){ const b=$("#iDel"); if(!b.dataset.armed){ b.dataset.armed="1"; b.textContent="Tap again to delete"; return; }
     home.list.splice(home.list.indexOf(x),1); idea=null; editing=false; save(); renderPanel(); renderIdeaMarkers(); renderCard(); toast("Deleted "+x.name); }
-  if(id==="iAdd"){ const {id:_,time:__,...rest}=x; home.list.splice(home.list.indexOf(x),1); idea=null;
-    if(home.kind==="maybe") dayIdx=home.di; addStopAt({lat:x.lat,lng:x.lng},x.name,rest); }
-  if(id==="iMaybe"){ const d=plan.days[dayIdx]; move(d.maybe,`Moved to Maybe · ${dlabel(d.date)}`); }
+  if(id==="iAdd"){ const di=+$("#iDay").value, {id:_,time:__,...rest}=x; home.list.splice(home.list.indexOf(x),1); idea=null;
+    restView=false; dayIdx=di; addStopAt({lat:x.lat,lng:x.lng},x.name,rest); }
+  if(id==="iMaybe"){ const d=plan.days[+$("#iDay").value]; if(home.list===d.maybe) return toast("Already in that day's Maybe");
+    move(d.maybe,`Moved to Maybe · ${dlabel(d.date)}`); }
   if(id==="iToIdeas") move(plan.ideas,"Moved to Ideas");
 }
 $("#mKml").onclick=()=>{
-  const x=s=>esc(s); const icon={anime:"pink-circle",gaming:"ltblu-circle",theme:"grn-circle",night:"purple-circle",food:"orange-circle",gamble:"ylw-stars",museum:"blu-circle",temple:"red-circle",wild:"grn-diamond",craft:"pink-diamond",music:"purple-diamond",event:"ylw-circle",transit:"wht-circle",stay:"wht-blank"};
+  const x=s=>esc(s); const icon={anime:"pink-circle",gaming:"ltblu-circle",theme:"grn-circle",night:"purple-circle",food:"orange-circle",dine:"red-stars",gamble:"ylw-stars",museum:"blu-circle",temple:"red-circle",wild:"grn-diamond",craft:"pink-diamond",music:"purple-diamond",event:"ylw-circle",transit:"wht-circle",stay:"wht-blank"};
   const out=['<?xml version="1.0" encoding="UTF-8"?>','<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+x(plan.trip||"Japan trip")+'</name>'];
   Object.entries(icon).forEach(([k,v])=>out.push(`<Style id="${k}"><IconStyle><Icon><href>http://maps.google.com/mapfiles/kml/paddle/${v}.png</href></Icon></IconStyle></Style>`));
   let cur=null; const groups=[]; plan.days.forEach((d,i)=>{ if(!cur||cur.city!==d.city||cur.days.length>=4){ cur={city:d.city,days:[]}; groups.push(cur);} cur.days.push(d); });
